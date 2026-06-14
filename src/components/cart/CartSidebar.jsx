@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ShoppingBag, MapPin, Loader2, X, Minus, Plus, ChevronLeft, Send } from 'lucide-react'
+import { ShoppingBag, MapPin, Loader2, X, Minus, Plus, ChevronLeft, Send, Map } from 'lucide-react'
+import LocationPicker from '../menu/LocationPicker'
 import toast from 'react-hot-toast'
 import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/cartStore'
 import { useGeolocation } from '../../hooks/useGeolocation'
@@ -33,6 +34,9 @@ export default function CartSidebar({ isOpen, onClose }) {
 
   const [step, setStep] = useState('cart')
   const [submitting, setSubmitting] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const [pickedLat, setPickedLat] = useState(null)
+  const [pickedLng, setPickedLng] = useState(null)
 
   const { data: config } = useConfig()
   const geo = useGeolocation()
@@ -50,14 +54,17 @@ export default function CartSidebar({ isOpen, onClose }) {
     setSubmitting(true)
 
     try {
+      const lat = pickedLat ?? geo.lat
+      const lng = pickedLng ?? geo.lng
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           customer_name: data.customerName,
           customer_phone: data.customerPhone,
           delivery_address: data.deliveryAddress,
-          delivery_lat: geo.lat,
-          delivery_lng: geo.lng,
+          delivery_lat: lat,
+          delivery_lng: lng,
           notes: data.notes || null,
           total: totalPrice,
         })
@@ -93,7 +100,14 @@ export default function CartSidebar({ isOpen, onClose }) {
         }
       }
 
-      const customer = { name: data.customerName, phone: data.customerPhone, address: data.deliveryAddress, notes: data.notes }
+      const customer = {
+        name: data.customerName,
+        phone: data.customerPhone,
+        address: data.deliveryAddress,
+        notes: data.notes,
+        lat,
+        lng,
+      }
       const waNegocio = config?.whatsapp_negocio || '595986818441'
       const waAjaka   = config?.whatsapp_ajaka
 
@@ -272,26 +286,41 @@ export default function CartSidebar({ isOpen, onClose }) {
               <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
                 Dirección de entrega
               </label>
-              <button
-                type="button"
-                onClick={geo.getLocation}
-                disabled={geo.loading}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-dashed mb-2 active:opacity-70 disabled:opacity-50"
-                style={{ borderColor: '#5b96bf', color: '#1d5e8c', background: '#fff' }}
-              >
-                {geo.loading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                Usar mi ubicación actual
-              </button>
-              {geo.error && <p className="text-xs text-red-500 mb-1">{geo.error}</p>}
-              <textarea
-                {...register('deliveryAddress')}
-                rows={2}
-                placeholder="Av. Independencia 123, Caaguazú..."
-                className="w-full border rounded-xl px-3 py-3 resize-none outline-none focus:ring-2"
-                style={inputStyle(errors.deliveryAddress)}
-              />
-              {errors.deliveryAddress && (
-                <p className="text-xs text-red-500 mt-0.5">{errors.deliveryAddress.message}</p>
+
+              {showMap ? (
+                <LocationPicker
+                  initialAddress={String(document.activeElement?.value ?? '')}
+                  onConfirm={({ lat, lng, address }) => {
+                    setPickedLat(lat)
+                    setPickedLng(lng)
+                    setValue('deliveryAddress', address)
+                    setShowMap(false)
+                  }}
+                  onCancel={() => setShowMap(false)}
+                />
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowMap(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-dashed mb-2 active:opacity-70"
+                    style={{ borderColor: '#5b96bf', color: '#1d5e8c', background: '#fff' }}
+                  >
+                    <Map size={14} />
+                    Elegir en el mapa
+                    {pickedLat && <span className="text-[11px] font-normal" style={{ color: '#16a34a' }}>✓ ubicación marcada</span>}
+                  </button>
+                  <textarea
+                    {...register('deliveryAddress')}
+                    rows={2}
+                    placeholder="O escribí tu dirección manualmente..."
+                    className="w-full border rounded-xl px-3 py-3 resize-none outline-none focus:ring-2"
+                    style={inputStyle(errors.deliveryAddress)}
+                  />
+                  {errors.deliveryAddress && (
+                    <p className="text-xs text-red-500 mt-0.5">{errors.deliveryAddress.message}</p>
+                  )}
+                </>
               )}
             </div>
 

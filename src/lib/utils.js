@@ -21,8 +21,14 @@ function orderItemLines(orderItems) {
   })
 }
 
+function mapsLink(lat, lng) {
+  if (!lat || !lng) return null
+  return `https://maps.google.com/?q=${lat},${lng}`
+}
+
 // Mensaje para Celestina (enviado desde el checkout del cliente)
 export function buildWhatsAppMessage(orderNumber, items, total, customer) {
+  const link = mapsLink(customer.lat, customer.lng)
   return [
     `✨ *Celestina Cocina — Pedido #${orderNumber}*`,
     ``,
@@ -35,6 +41,7 @@ export function buildWhatsAppMessage(orderNumber, items, total, customer) {
     `👤 *Nombre:* ${customer.name}`,
     `📱 *Tel:* ${customer.phone}`,
     `📍 *Dirección:* ${customer.address}`,
+    link ? `🗺 *Ver en mapa:* ${link}` : null,
     customer.notes ? `📝 *Notas:* _${customer.notes}_` : null,
     ``,
     `✅ ¡Gracias por tu pedido!`,
@@ -45,6 +52,7 @@ export function buildWhatsAppMessage(orderNumber, items, total, customer) {
 
 // Mensaje para Ajaka (enviado desde el checkout del cliente)
 export function buildAjakaMessage(orderNumber, items, total, customer) {
+  const link = mapsLink(customer.lat, customer.lng)
   return [
     `🚗 *Delivery — Celestina Cocina #${orderNumber}*`,
     ``,
@@ -54,6 +62,7 @@ export function buildAjakaMessage(orderNumber, items, total, customer) {
     `💰 *TOTAL: ${formatPrice(total)}*`,
     ``,
     `📍 *Dirección:* ${customer.address}`,
+    link ? `🗺 ${link}` : null,
     `👤 *Cliente:* ${customer.name}`,
     `📱 *Tel:* ${customer.phone}`,
     customer.notes ? `📝 _${customer.notes}_` : null,
@@ -64,6 +73,7 @@ export function buildAjakaMessage(orderNumber, items, total, customer) {
 
 // Mensaje para Ajaka generado desde el admin (usa datos del pedido guardado)
 export function buildAjakaMessageFromOrder(order) {
+  const link = mapsLink(order.delivery_lat, order.delivery_lng)
   return [
     `🚗 *Delivery — Celestina Cocina #${order.order_number}*`,
     ``,
@@ -73,6 +83,7 @@ export function buildAjakaMessageFromOrder(order) {
     `💰 *TOTAL: ${formatPrice(order.total)}*`,
     ``,
     `📍 *Dirección:* ${order.delivery_address}`,
+    link ? `🗺 ${link}` : null,
     `👤 *Cliente:* ${order.customer_name}`,
     `📱 *Tel:* ${order.customer_phone}`,
     order.notes ? `📝 _${order.notes}_` : null,
