@@ -32,7 +32,7 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
       }}
     >
       {/* Imagen */}
-      <div className="w-full overflow-hidden relative" style={{ aspectRatio: '4/3' }}>
+      <div className="w-full overflow-hidden relative" style={{ aspectRatio: '16/10' }}>
         {item.image_url ? (
           <img
             src={item.image_url}
@@ -51,7 +51,7 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
       </div>
 
       {/* Cuerpo */}
-      <div className="p-3.5 flex flex-col gap-1.5 flex-1">
+      <div className="p-3.5 flex flex-col gap-1 flex-1">
         <h3 className="font-display font-bold text-[17px] leading-tight text-celestina-tinta">
           {item.name}
         </h3>
@@ -71,17 +71,21 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
           </span>
         )}
 
-        {hasModifiers && (
-          <span className="text-[11px]" style={{ color: '#7c8a93' }}>
-            Elegí tu variante →
-          </span>
-        )}
-
         {/* Footer: precio + control */}
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-bold text-[15px] text-celestina-tinta">
-            {formatPrice(item.price)}
-          </span>
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <div className="flex flex-col">
+            {hasModifiers && (
+              <span
+                className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full self-start"
+                style={{ background: '#fff3cd', color: '#92620a' }}
+              >
+                Elegí tu variante
+              </span>
+            )}
+            <span className="font-bold text-[16px] text-celestina-tinta">
+              {formatPrice(item.price)}
+            </span>
+          </div>
 
           <AnimatePresence mode="wait" initial={false}>
             {hasModifiers || qty === 0 ? (
