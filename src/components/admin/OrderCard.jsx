@@ -170,19 +170,17 @@ export default function OrderCard({ order }) {
             </div>
           )}
 
-          {/* Notificar Ajaka */}
-          {config?.whatsapp_ajaka && (
-            <div className="pt-1">
-              <button
-                onClick={notifyAjaka}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-85"
-                style={{ background: '#25d366' }}
-              >
-                <MessageCircle size={13} />
-                Notificar Ajaka
-              </button>
-            </div>
-          )}
+          {/* Notificar Ajaka — siempre visible, error si no está configurado */}
+          <div className="pt-1">
+            <button
+              onClick={notifyAjaka}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-85"
+              style={{ background: '#25d366' }}
+            >
+              <MessageCircle size={13} />
+              Notificar Ajaka
+            </button>
+          </div>
         </div>
       )}
     </div>
