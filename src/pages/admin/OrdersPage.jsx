@@ -1,16 +1,35 @@
-import { useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
 import toast from 'react-hot-toast'
 import { useOrders } from '../../hooks/useOrders'
 import OrderCard from '../../components/admin/OrderCard'
 
 const STATUS_FILTERS = [
-  { value: null,        label: 'Todos' },
-  { value: 'pendiente', label: 'Pendientes' },
-  { value: 'preparando',label: 'Preparando' },
-  { value: 'enviado',   label: 'Enviados' },
-  { value: 'entregado', label: 'Entregados' },
-  { value: 'cancelado', label: 'Cancelados' },
+  { value: null,         label: 'Todos' },
+  { value: 'pendiente',  label: 'Pendientes' },
+  { value: 'preparando', label: 'Preparando' },
+  { value: 'enviado',    label: 'Enviados' },
+  { value: 'entregado',  label: 'Entregados' },
+  { value: 'cancelado',  label: 'Cancelados' },
 ]
+
+const DATE_FILTERS = [
+  { value: 'today', label: 'Hoy' },
+  { value: 'week',  label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: null,    label: 'Todo' },
+]
+
+function applyDateFilter(orders, dateFilter) {
+  if (!dateFilter || !orders) return orders
+  const now = new Date()
+  const since =
+    dateFilter === 'today' ? startOfDay(now) :
+    dateFilter === 'week'  ? startOfWeek(now, { weekStartsOn: 1 }) :
+    dateFilter === 'month' ? startOfMonth(now) : null
+  if (!since) return orders
+  return orders.filter(o => isAfter(new Date(o.created_at), since))
+}
 
 function playBeep() {
   try {
@@ -28,7 +47,8 @@ function playBeep() {
 }
 
 export default function OrdersPage() {
-  const activeFilter = useRef(null)
+  const [statusFilter, setStatusFilter] = useState(null)
+  const [dateFilter, setDateFilter] = useState('today')
 
   const onNewOrder = useCallback(order => {
     playBeep()
@@ -40,20 +60,19 @@ export default function OrdersPage() {
 
   const { data: orders, isLoading, error } = useOrders({ onNewOrder })
 
-  const filter = activeFilter.current
-  const visible = filter
-    ? orders?.filter(o => o.status === filter)
-    : orders
-
-  const pending = orders?.filter(o => o.status === 'pendiente').length ?? 0
+  const byDate   = applyDateFilter(orders, dateFilter)
+  const visible  = statusFilter ? byDate?.filter(o => o.status === statusFilter) : byDate
+  const pending  = orders?.filter(o => o.status === 'pendiente').length ?? 0
 
   return (
     <div className="p-5 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3 mb-5">
+
+      {/* Encabezado */}
+      <div className="flex items-center gap-3 mb-4">
         <h1 className="font-display font-bold text-2xl" style={{ color: '#1c2b36' }}>Pedidos</h1>
         {pending > 0 && (
           <span
-            className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white animate-pulse"
+            className="px-2.5 py-0.5 rounded-full text-xs font-bold animate-pulse"
             style={{ background: '#f2c14e', color: '#1c2b36' }}
           >
             {pending} nuevo{pending > 1 ? 's' : ''}
@@ -61,15 +80,33 @@ export default function OrdersPage() {
         )}
       </div>
 
-      {/* Filtros */}
+      {/* Filtro por fecha */}
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-2" style={{ scrollbarWidth: 'none' }}>
+        {DATE_FILTERS.map(f => (
+          <button
+            key={String(f.value)}
+            onClick={() => setDateFilter(f.value)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
+            style={
+              dateFilter === f.value
+                ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
+                : { background: '#fff', color: '#6b7280', border: '1px solid #e5e7eb' }
+            }
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filtro por estado */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-5" style={{ scrollbarWidth: 'none' }}>
         {STATUS_FILTERS.map(f => (
           <button
             key={String(f.value)}
-            onClick={() => { activeFilter.current = f.value; window.location.reload() }}
+            onClick={() => setStatusFilter(f.value)}
             className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
             style={
-              filter === f.value
+              statusFilter === f.value
                 ? { background: '#1d5e8c', color: '#fff', border: '1px solid #1d5e8c' }
                 : { background: '#fff', color: '#1d5e8c', border: '1px solid #dbe9f0' }
             }
@@ -95,10 +132,10 @@ export default function OrdersPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 pb-4">
           {visible?.length === 0 && (
             <p className="text-sm text-center py-12" style={{ color: '#6b7280' }}>
-              No hay pedidos{filter ? ` con estado "${filter}"` : ''}.
+              No hay pedidos{statusFilter ? ` con estado "${statusFilter}"` : ''}{dateFilter ? ` en este período` : ''}.
             </p>
           )}
           {visible?.map(order => (

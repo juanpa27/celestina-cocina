@@ -1,23 +1,22 @@
-import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { ShoppingBag, UtensilsCrossed, Settings, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { NavLink, Outlet } from 'react-router-dom'
+import { ShoppingBag, UtensilsCrossed, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import LoginPage from './LoginPage'
 
 const NAV = [
   { to: '/admin/pedidos',       icon: ShoppingBag,     label: 'Pedidos' },
   { to: '/admin/menu',          icon: UtensilsCrossed, label: 'Menú' },
-  { to: '/admin/configuracion', icon: Settings,        label: 'Configuración' },
+  { to: '/admin/configuracion', icon: Settings,        label: 'Config' },
 ]
 
 export default function AdminLayout() {
   const { session, loading, user, signOut } = useAuth()
-  const [mobileOpen, setMobileOpen] = useState(false)
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#f9fafb' }}>
-        <div className="w-8 h-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#1d5e8c', borderTopColor: 'transparent' }} />
+        <div className="w-8 h-8 rounded-full border-4 border-t-transparent animate-spin"
+          style={{ borderColor: '#1d5e8c', borderTopColor: 'transparent' }} />
       </div>
     )
   }
@@ -77,43 +76,71 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* ── Topbar mobile ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3" style={{ background: '#1c2b36' }}>
-        <p className="font-display font-bold text-white">Celestina · Admin</p>
-        <button onClick={() => setMobileOpen(o => !o)} className="text-white">
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+      {/* ── Topbar mobile (solo logo + título) ── */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-4"
+        style={{
+          background: '#1c2b36',
+          height: '52px',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ border: '1.5px solid #f2c14e' }}>
+          <img src="/logo-celestina.jpg" alt="" className="w-full h-full object-cover" />
+        </div>
+        <p className="font-display font-bold text-white text-sm">Celestina · Admin</p>
       </div>
 
-      {/* ── Drawer mobile ── */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-20" onClick={() => setMobileOpen(false)}>
-          <div className="absolute top-12 left-0 right-0 p-4 flex flex-col gap-2" style={{ background: '#1c2b36' }} onClick={e => e.stopPropagation()}>
-            {NAV.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold"
-                style={({ isActive }) => ({
-                  background: isActive ? 'rgba(242,193,78,0.12)' : 'transparent',
-                  color: isActive ? '#f2c14e' : '#94a3b8',
-                })}
-              >
-                <Icon size={16} />{label}
-              </NavLink>
-            ))}
-            <button onClick={signOut} className="flex items-center gap-2 px-4 py-3 text-sm" style={{ color: '#64748b' }}>
-              <LogOut size={14} /> Cerrar sesión
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Contenido ── */}
-      <main className="flex-1 min-w-0 pt-14 md:pt-0 overflow-auto">
+      {/* ── Contenido (padding top para topbar, bottom para bottom nav) ── */}
+      <main className="flex-1 min-w-0 pt-[52px] pb-[68px] md:pt-0 md:pb-0 overflow-auto">
         <Outlet />
       </main>
+
+      {/* ── Bottom nav mobile ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch"
+        style={{
+          background: '#1c2b36',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          height: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
+        {NAV.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors"
+            style={({ isActive }) => ({
+              color: isActive ? '#f2c14e' : '#64748b',
+            })}
+          >
+            {({ isActive }) => (
+              <>
+                <div
+                  className="flex items-center justify-center w-10 h-7 rounded-xl transition-colors"
+                  style={{ background: isActive ? 'rgba(242,193,78,0.15)' : 'transparent' }}
+                >
+                  <Icon size={20} />
+                </div>
+                {label}
+              </>
+            )}
+          </NavLink>
+        ))}
+
+        {/* Cerrar sesión */}
+        <button
+          onClick={signOut}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold"
+          style={{ color: '#64748b' }}
+        >
+          <div className="flex items-center justify-center w-10 h-7 rounded-xl">
+            <LogOut size={20} />
+          </div>
+          Salir
+        </button>
+      </nav>
     </div>
   )
 }

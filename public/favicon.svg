@@ -1,10 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Tile azulejo fondo azul -->
+  <defs>
+    <clipPath id="clip">
+      <rect width="32" height="32" rx="7"/>
+    </clipPath>
+  </defs>
+  <!-- Fondo azul azulejo -->
   <rect width="32" height="32" rx="7" fill="#1d5e8c"/>
-  <!-- Franja amarilla superior (acento azulejo) -->
-  <rect x="0" y="0" width="32" height="5" rx="7" fill="#f2c14e"/>
-  <rect x="0" y="2.5" width="32" height="2.5" fill="#f2c14e"/>
-  <!-- Letra C bold serif -->
-  <text x="16" y="26" text-anchor="middle" font-size="21" font-weight="700"
-        font-family="Georgia, 'Times New Roman', serif" fill="white">C</text>
+  <!-- Franja amarilla superior (clipeada al borde redondeado) -->
+  <rect width="32" height="5" fill="#f2c14e" clip-path="url(#clip)"/>
+  <!-- C como arco SVG (no text, para compatibilidad total con favicons) -->
+  <path d="M20.5,11 A7,7 0 1,0 20.5,21"
+        stroke="white" stroke-width="4.2"
+        fill="none" stroke-linecap="round"/>
 </svg>
