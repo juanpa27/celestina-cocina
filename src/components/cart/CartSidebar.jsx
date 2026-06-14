@@ -9,7 +9,7 @@ import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/ca
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { useConfig } from '../../hooks/useConfig'
 import { supabase } from '../../lib/supabase'
-import { formatPrice, buildWhatsAppMessage, buildAjakaMessage } from '../../lib/utils'
+import { formatPrice, buildWhatsAppMessage } from '../../lib/utils'
 
 const checkoutSchema = z.object({
   customerName: z.string().min(2, 'Ingresá tu nombre completo'),
@@ -109,23 +109,14 @@ export default function CartSidebar({ isOpen, onClose }) {
         lng,
       }
       const waNegocio = config?.whatsapp_negocio || '595986818441'
-      const waAjaka   = config?.whatsapp_ajaka
-
       const msgCelestina = buildWhatsAppMessage(order.order_number, items, totalPrice, customer)
-      const msgAjaka     = buildAjakaMessage(order.order_number, items, totalPrice, customer)
 
       window.open(`https://wa.me/${waNegocio}?text=${encodeURIComponent(msgCelestina)}`, '_blank')
-
-      if (waAjaka) {
-        setTimeout(() => {
-          window.open(`https://wa.me/${waAjaka}?text=${encodeURIComponent(msgAjaka)}`, '_blank')
-        }, 600)
-      }
 
       clearCart()
       setStep('cart')
       onClose?.()
-      toast.success(waAjaka ? '¡Pedido enviado! Se notificó a Celestina y a Ajaka.' : '¡Pedido enviado! Revisá WhatsApp.')
+      toast.success('¡Pedido enviado! Revisá WhatsApp.')
     } catch (err) {
       console.error(err)
       toast.error('Hubo un error al enviar el pedido. Intentá de nuevo.')
