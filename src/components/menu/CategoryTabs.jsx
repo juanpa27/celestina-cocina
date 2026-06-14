@@ -20,8 +20,14 @@ export default function CategoryTabs({ categories = [], activeId, onSelect }) {
 
   return (
     <div
-      className="sticky z-20 bg-celestina-crema"
-      style={{ top: 0, borderBottom: '1px solid #e3edf2' }}
+      className="sticky z-20"
+      style={{
+        top: 0,
+        borderBottom: '1px solid rgba(227,237,242,0.7)',
+        background: 'rgba(253,251,246,0.75)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
     >
       <div
         ref={stripRef}
