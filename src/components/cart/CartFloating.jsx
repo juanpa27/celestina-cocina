@@ -11,8 +11,9 @@ export default function CartFloating({ onOpen }) {
   return (
     <button
       onClick={onOpen}
-      className="fixed bottom-4 left-4 right-4 md:hidden z-30 flex items-center justify-between text-white font-bold text-sm rounded-2xl px-4 py-3.5"
+      className="fixed left-4 right-4 md:hidden z-30 flex items-center justify-between text-white font-bold text-sm rounded-2xl px-4 py-3.5"
       style={{
+        bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
         background: '#1d5e8c',
         boxShadow: '0 8px 24px rgba(29,94,140,0.35)',
       }}

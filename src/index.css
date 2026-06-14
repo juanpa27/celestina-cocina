@@ -20,3 +20,30 @@ html {
   background-color: #fdfbf6;
   color: #1c2b36;
 }
+
+/* ── Mobile global fixes ── */
+
+/* Elimina el flash azul al tocar en iOS/Android */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Elimina el delay de 300ms en botones y links */
+button, a, label, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Previene el zoom automático de iOS al hacer foco en inputs */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Scroll suave en iOS */
+.overflow-y-auto, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ocultar scrollbar en Chrome/Safari */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

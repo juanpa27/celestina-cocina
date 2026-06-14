@@ -8,8 +8,6 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
   const getQuantity = useCartStore(s => s.getQuantity)
 
   const hasModifiers = item.modifierGroups?.length > 0
-
-  // Para ítems sin modificadores tomamos la cantidad directa
   const qty = hasModifiers ? 0 : getQuantity(item.id, undefined)
 
   function handleAdd() {
@@ -26,18 +24,10 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
 
   return (
     <div
-      className="bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-150"
+      className="bg-white rounded-2xl overflow-hidden flex flex-col"
       style={{
         border: '1px solid #e3edf2',
         boxShadow: '0 2px 10px rgba(29,94,140,0.04)',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-3px)'
-        e.currentTarget.style.boxShadow = '0 8px 22px rgba(29,94,140,0.12)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = ''
-        e.currentTarget.style.boxShadow = '0 2px 10px rgba(29,94,140,0.04)'
       }}
     >
       {/* Imagen */}
@@ -47,6 +37,7 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
             src={item.image_url}
             alt={item.name}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         ) : (
           <div
@@ -94,44 +85,44 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
           {hasModifiers ? (
             <button
               onClick={handleAdd}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold transition-opacity hover:opacity-80"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold active:opacity-70"
               style={{ background: '#1d5e8c' }}
               aria-label={`Agregar ${item.name}`}
             >
-              <Plus size={16} strokeWidth={2.5} />
+              <Plus size={18} strokeWidth={2.5} />
             </button>
           ) : qty === 0 ? (
             <button
               onClick={handleAdd}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold transition-opacity hover:opacity-80"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold active:opacity-70"
               style={{ background: '#1d5e8c' }}
               aria-label={`Agregar ${item.name}`}
             >
-              <Plus size={16} strokeWidth={2.5} />
+              <Plus size={18} strokeWidth={2.5} />
             </button>
           ) : (
             <div
-              className="flex items-center gap-2.5 rounded-lg px-1.5 py-1"
+              className="flex items-center gap-1 rounded-xl px-1.5 py-1"
               style={{ background: '#eaf3f8' }}
             >
               <button
                 onClick={handleDecrement}
-                className="w-6 h-6 rounded-md flex items-center justify-center text-white"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
                 style={{ background: '#1d5e8c' }}
                 aria-label="Quitar uno"
               >
-                <Minus size={12} strokeWidth={3} />
+                <Minus size={14} strokeWidth={3} />
               </button>
-              <span className="text-sm font-bold min-w-[14px] text-center text-celestina-tinta">
+              <span className="text-sm font-bold min-w-[20px] text-center text-celestina-tinta">
                 {qty}
               </span>
               <button
                 onClick={handleAdd}
-                className="w-6 h-6 rounded-md flex items-center justify-center text-white"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
                 style={{ background: '#1d5e8c' }}
                 aria-label="Agregar uno más"
               >
-                <Plus size={12} strokeWidth={3} />
+                <Plus size={14} strokeWidth={3} />
               </button>
             </div>
           )}

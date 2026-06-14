@@ -17,6 +17,12 @@ const checkoutSchema = z.object({
   notes: z.string().optional(),
 })
 
+const inputStyle = (hasError) => ({
+  borderColor: hasError ? '#ef4444' : '#dbe9f0',
+  fontFamily: 'inherit',
+  fontSize: '16px',
+})
+
 export default function CartSidebar({ isOpen, onClose }) {
   const items = useCartStore(s => s.items)
   const addItem = useCartStore(s => s.addItem)
@@ -25,7 +31,7 @@ export default function CartSidebar({ isOpen, onClose }) {
   const totalItems = useCartStore(selectTotalItems)
   const totalPrice = useCartStore(selectTotalPrice)
 
-  const [step, setStep] = useState('cart') // 'cart' | 'checkout'
+  const [step, setStep] = useState('cart')
   const [submitting, setSubmitting] = useState(false)
 
   const { data: config } = useConfig()
@@ -35,7 +41,6 @@ export default function CartSidebar({ isOpen, onClose }) {
     resolver: zodResolver(checkoutSchema),
   })
 
-  // Pre-rellenar dirección cuando la geolocalización resuelve
   useEffect(() => {
     if (geo.address) setValue('deliveryAddress', geo.address)
   }, [geo.address, setValue])
@@ -45,7 +50,6 @@ export default function CartSidebar({ isOpen, onClose }) {
     setSubmitting(true)
 
     try {
-      // 1. Insertar pedido
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -62,7 +66,6 @@ export default function CartSidebar({ isOpen, onClose }) {
 
       if (orderError) throw orderError
 
-      // 2. Insertar items + modificadores
       for (const item of items) {
         const { data: orderItem, error: itemError } = await supabase
           .from('order_items')
@@ -90,9 +93,7 @@ export default function CartSidebar({ isOpen, onClose }) {
         }
       }
 
-      // 3. Abrir WhatsApp — Celestina Cocina + Ajaka
       const customer = { name: data.customerName, phone: data.customerPhone, address: data.deliveryAddress, notes: data.notes }
-
       const waNegocio = config?.whatsapp_negocio || '595986818441'
       const waAjaka   = config?.whatsapp_ajaka
 
@@ -102,13 +103,11 @@ export default function CartSidebar({ isOpen, onClose }) {
       window.open(`https://wa.me/${waNegocio}?text=${encodeURIComponent(msgCelestina)}`, '_blank')
 
       if (waAjaka) {
-        // Pequeño delay para que el navegador no bloquee el segundo popup
         setTimeout(() => {
           window.open(`https://wa.me/${waAjaka}?text=${encodeURIComponent(msgAjaka)}`, '_blank')
         }, 600)
       }
 
-      // 4. Reset
       clearCart()
       setStep('cart')
       onClose?.()
@@ -121,32 +120,48 @@ export default function CartSidebar({ isOpen, onClose }) {
     }
   }
 
-  const sidebarClass = `
-    fixed md:static inset-0 md:inset-auto z-40
-    bg-white rounded-none md:rounded-[18px]
-    flex flex-col
-    transition-transform duration-300 ease-in-out
-    md:w-[320px] md:flex-shrink-0 md:self-start md:sticky md:top-6
-    ${isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
-  `
-
   return (
     <>
       {/* Overlay mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 z-30 md:hidden"
-          style={{ background: 'rgba(28,43,54,0.4)' }}
+          style={{ background: 'rgba(28,43,54,0.5)' }}
           onClick={onClose}
         />
       )}
 
+      {/* ── Bottom sheet mobile / Sidebar desktop ── */}
       <aside
-        className={sidebarClass}
-        style={{ border: '1px solid #e3edf2', boxShadow: '0 4px 18px rgba(29,94,140,0.06)', maxHeight: '100dvh', overflowY: 'auto' }}
+        className={[
+          // Mobile: bottom sheet fijo
+          'fixed bottom-0 left-0 right-0 z-40',
+          'rounded-t-[22px]',
+          // Desktop: sidebar estático
+          'md:static md:bottom-auto md:left-auto md:right-auto',
+          'md:rounded-[18px]',
+          'md:w-[320px] md:flex-shrink-0 md:self-start md:sticky md:top-6',
+          // Común
+          'bg-white flex flex-col',
+          'transition-transform duration-300 ease-out',
+          // Animación: oculto debajo en mobile cuando cerrado, visible siempre en desktop
+          isOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0',
+        ].join(' ')}
+        style={{
+          border: '1px solid #e3edf2',
+          boxShadow: '0 -4px 30px rgba(29,94,140,0.12)',
+          maxHeight: 'min(90dvh, 90vh)',
+          overflowY: 'auto',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
-        {/* Header del carrito */}
-        <div className="flex items-center justify-between p-5 sticky top-0 bg-white z-10" style={{ borderBottom: '1px solid #f0f5f8' }}>
+        {/* Handle drag — solo mobile */}
+        <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: '#dbe9f0' }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0 bg-white" style={{ borderBottom: '1px solid #f0f5f8' }}>
           {step === 'checkout' ? (
             <button onClick={() => setStep('cart')} className="flex items-center gap-1.5 text-sm font-bold" style={{ color: '#1d5e8c' }}>
               <ChevronLeft size={16} /> Volver al carrito
@@ -162,7 +177,7 @@ export default function CartSidebar({ isOpen, onClose }) {
               )}
             </h2>
           )}
-          <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-gray-100" aria-label="Cerrar carrito">
+          <button onClick={onClose} className="md:hidden p-2 -mr-1 rounded-xl hover:bg-gray-100 active:bg-gray-200" aria-label="Cerrar carrito">
             <X size={18} className="text-celestina-tinta" />
           </button>
         </div>
@@ -179,12 +194,11 @@ export default function CartSidebar({ isOpen, onClose }) {
               </div>
             ) : (
               <>
-                {/* Items */}
                 <div className="flex flex-col divide-y" style={{ borderColor: '#f0f5f8' }}>
                   {items.map(item => {
                     const linePrice = (item.basePrice + (item.selectedModifier?.extraPrice ?? 0)) * item.quantity
                     return (
-                      <div key={item.key} className="flex items-center justify-between py-2.5 gap-2">
+                      <div key={item.key} className="flex items-center justify-between py-3 gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-[13.5px] font-semibold truncate text-celestina-tinta">
                             {item.itemName}
@@ -196,25 +210,25 @@ export default function CartSidebar({ isOpen, onClose }) {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => decrement(item.key)}
-                            className="w-5 h-5 rounded flex items-center justify-center text-white"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
                             style={{ background: '#1d5e8c' }}
                             aria-label="Quitar uno"
                           >
-                            <Minus size={10} strokeWidth={3} />
+                            <Minus size={12} strokeWidth={3} />
                           </button>
-                          <span className="text-xs font-bold w-4 text-center text-celestina-tinta">
+                          <span className="text-sm font-bold w-5 text-center text-celestina-tinta">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => addItem({ menuItemId: item.menuItemId, itemName: item.itemName, basePrice: item.basePrice, selectedModifier: item.selectedModifier })}
-                            className="w-5 h-5 rounded flex items-center justify-center text-white"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
                             style={{ background: '#1d5e8c' }}
                             aria-label="Agregar uno más"
                           >
-                            <Plus size={10} strokeWidth={3} />
+                            <Plus size={12} strokeWidth={3} />
                           </button>
                         </div>
 
@@ -226,7 +240,6 @@ export default function CartSidebar({ isOpen, onClose }) {
                   })}
                 </div>
 
-                {/* Total */}
                 <div className="flex justify-between items-center py-1" style={{ borderTop: '2px solid #eaf3f8' }}>
                   <span className="font-display font-bold text-[18px]" style={{ color: '#1d5e8c' }}>Total</span>
                   <span className="font-display font-bold text-[18px]" style={{ color: '#1d5e8c' }}>
@@ -236,7 +249,7 @@ export default function CartSidebar({ isOpen, onClose }) {
 
                 <button
                   onClick={() => setStep('checkout')}
-                  className="w-full py-3.5 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                  className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75"
                   style={{ background: '#1d5e8c' }}
                 >
                   Ir al pedido →
@@ -249,13 +262,12 @@ export default function CartSidebar({ isOpen, onClose }) {
         {/* ── STEP: CHECKOUT ── */}
         {step === 'checkout' && (
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 p-5">
-            {/* Resumen compacto */}
             <div className="rounded-xl p-3 text-sm" style={{ background: '#eaf3f8' }}>
               <p className="font-bold text-celestina-tinta">{totalItems} {totalItems === 1 ? 'producto' : 'productos'}</p>
               <p className="font-display font-bold text-base" style={{ color: '#1d5e8c' }}>{formatPrice(totalPrice)}</p>
             </div>
 
-            {/* Ubicación */}
+            {/* Dirección */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
                 Dirección de entrega
@@ -264,12 +276,10 @@ export default function CartSidebar({ isOpen, onClose }) {
                 type="button"
                 onClick={geo.getLocation}
                 disabled={geo.loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border border-dashed mb-2 transition-opacity hover:opacity-80 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-dashed mb-2 active:opacity-70 disabled:opacity-50"
                 style={{ borderColor: '#5b96bf', color: '#1d5e8c', background: '#fff' }}
               >
-                {geo.loading
-                  ? <Loader2 size={14} className="animate-spin" />
-                  : <MapPin size={14} />}
+                {geo.loading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
                 Usar mi ubicación actual
               </button>
               {geo.error && <p className="text-xs text-red-500 mb-1">{geo.error}</p>}
@@ -277,11 +287,8 @@ export default function CartSidebar({ isOpen, onClose }) {
                 {...register('deliveryAddress')}
                 rows={2}
                 placeholder="Av. Independencia 123, Caaguazú..."
-                className="w-full border rounded-xl px-3 py-2.5 text-sm resize-none outline-none focus:ring-2"
-                style={{
-                  borderColor: errors.deliveryAddress ? '#ef4444' : '#dbe9f0',
-                  fontFamily: 'inherit',
-                }}
+                className="w-full border rounded-xl px-3 py-3 resize-none outline-none focus:ring-2"
+                style={inputStyle(errors.deliveryAddress)}
               />
               {errors.deliveryAddress && (
                 <p className="text-xs text-red-500 mt-0.5">{errors.deliveryAddress.message}</p>
@@ -296,8 +303,8 @@ export default function CartSidebar({ isOpen, onClose }) {
               <input
                 {...register('customerName')}
                 placeholder="Juan Pérez"
-                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2"
-                style={{ borderColor: errors.customerName ? '#ef4444' : '#dbe9f0', fontFamily: 'inherit' }}
+                className="w-full border rounded-xl px-3 py-3 outline-none focus:ring-2"
+                style={inputStyle(errors.customerName)}
               />
               {errors.customerName && (
                 <p className="text-xs text-red-500 mt-0.5">{errors.customerName.message}</p>
@@ -313,8 +320,8 @@ export default function CartSidebar({ isOpen, onClose }) {
                 {...register('customerPhone')}
                 type="tel"
                 placeholder="0981 123 456"
-                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2"
-                style={{ borderColor: errors.customerPhone ? '#ef4444' : '#dbe9f0', fontFamily: 'inherit' }}
+                className="w-full border rounded-xl px-3 py-3 outline-none focus:ring-2"
+                style={inputStyle(errors.customerPhone)}
               />
               {errors.customerPhone && (
                 <p className="text-xs text-red-500 mt-0.5">{errors.customerPhone.message}</p>
@@ -330,8 +337,8 @@ export default function CartSidebar({ isOpen, onClose }) {
                 {...register('notes')}
                 rows={2}
                 placeholder="Tocar al timbre, alergia a..."
-                className="w-full border rounded-xl px-3 py-2.5 text-sm resize-none outline-none focus:ring-2"
-                style={{ borderColor: '#dbe9f0', fontFamily: 'inherit' }}
+                className="w-full border rounded-xl px-3 py-3 resize-none outline-none focus:ring-2"
+                style={inputStyle(false)}
               />
             </div>
 
@@ -340,16 +347,13 @@ export default function CartSidebar({ isOpen, onClose }) {
               💳 Aceptamos: efectivo · Tigo Money · Ueno · transferencia
             </div>
 
-            {/* Botón confirmar */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 disabled:opacity-60"
               style={{ background: '#1d5e8c' }}
             >
-              {submitting
-                ? <Loader2 size={16} className="animate-spin" />
-                : <Send size={15} />}
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
               Confirmar y enviar por WhatsApp
             </button>
 
