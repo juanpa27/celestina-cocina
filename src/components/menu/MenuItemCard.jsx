@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 import { formatPrice } from '../../lib/utils'
@@ -82,50 +83,60 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
             {formatPrice(item.price)}
           </span>
 
-          {hasModifiers ? (
-            <button
-              onClick={handleAdd}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold active:opacity-70"
-              style={{ background: '#1d5e8c' }}
-              aria-label={`Agregar ${item.name}`}
-            >
-              <Plus size={18} strokeWidth={2.5} />
-            </button>
-          ) : qty === 0 ? (
-            <button
-              onClick={handleAdd}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold active:opacity-70"
-              style={{ background: '#1d5e8c' }}
-              aria-label={`Agregar ${item.name}`}
-            >
-              <Plus size={18} strokeWidth={2.5} />
-            </button>
-          ) : (
-            <div
-              className="flex items-center gap-1 rounded-xl px-1.5 py-1"
-              style={{ background: '#eaf3f8' }}
-            >
-              <button
-                onClick={handleDecrement}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
-                style={{ background: '#1d5e8c' }}
-                aria-label="Quitar uno"
-              >
-                <Minus size={14} strokeWidth={3} />
-              </button>
-              <span className="text-sm font-bold min-w-[20px] text-center text-celestina-tinta">
-                {qty}
-              </span>
-              <button
+          <AnimatePresence mode="wait" initial={false}>
+            {hasModifiers || qty === 0 ? (
+              <motion.button
+                key="add-btn"
                 onClick={handleAdd}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
                 style={{ background: '#1d5e8c' }}
-                aria-label="Agregar uno más"
+                aria-label={`Agregar ${item.name}`}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                whileTap={{ scale: 0.88 }}
               >
-                <Plus size={14} strokeWidth={3} />
-              </button>
-            </div>
-          )}
+                <Plus size={18} strokeWidth={2.5} />
+              </motion.button>
+            ) : (
+              <motion.div
+                key="qty-control"
+                className="flex items-center gap-1 rounded-xl px-1.5 py-1"
+                style={{ background: '#eaf3f8' }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <button
+                  onClick={handleDecrement}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+                  style={{ background: '#1d5e8c' }}
+                  aria-label="Quitar uno"
+                >
+                  <Minus size={14} strokeWidth={3} />
+                </button>
+                <motion.span
+                  key={qty}
+                  className="text-sm font-bold min-w-[20px] text-center text-celestina-tinta"
+                  initial={{ scale: 1.4, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                >
+                  {qty}
+                </motion.span>
+                <button
+                  onClick={handleAdd}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+                  style={{ background: '#1d5e8c' }}
+                  aria-label="Agregar uno más"
+                >
+                  <Plus size={14} strokeWidth={3} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

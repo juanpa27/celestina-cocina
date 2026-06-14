@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 import { formatPrice } from '../../lib/utils'
@@ -24,12 +25,16 @@ export default function ModifierModal({ item, onClose }) {
   }
 
   return (
-    <div
+    <motion.div
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(28,43,54,0.55)', backdropFilter: 'blur(3px)' }}
+      style={{ backdropFilter: 'blur(3px)' }}
+      initial={{ background: 'rgba(28,43,54,0)' }}
+      animate={{ background: 'rgba(28,43,54,0.55)' }}
+      exit={{ background: 'rgba(28,43,54,0)' }}
+      transition={{ duration: 0.22 }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div
+      <motion.div
         className="w-full bg-white overflow-hidden"
         style={{
           borderRadius: '22px 22px 0 0',
@@ -38,6 +43,10 @@ export default function ModifierModal({ item, onClose }) {
           overflowY: 'auto',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 320, damping: 32 }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -159,7 +168,7 @@ export default function ModifierModal({ item, onClose }) {
             Agregar al carrito
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
