@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colores Celestina */
+  --color-celestina-azul: #1d5e8c;
+  --color-celestina-azul-claro: #5b96bf;
+  --color-celestina-amarillo: #f2c14e;
+  --color-celestina-crema: #fdfbf6;
+  --color-celestina-tinta: #1c2b36;
+  --color-celestina-azulejo: #eaf3f8;
+  --color-celestina-gris: #7c8a93;
+
+  /* Tipografías */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+
+html {
+  font-family: var(--font-body);
+  background-color: #fdfbf6;
+  color: #1c2b36;
+}
