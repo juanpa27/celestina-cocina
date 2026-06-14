@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMenu } from '../hooks/useMenu'
 import MenuHeader from '../components/menu/MenuHeader'
 import CategoryTabs from '../components/menu/CategoryTabs'
@@ -8,15 +8,55 @@ import CartSidebar from '../components/cart/CartSidebar'
 import CartFloating from '../components/cart/CartFloating'
 import AzulejoStrip from '../components/ui/AzulejoStrip'
 
+const TABS_HEIGHT = 52 // px — altura del sticky tabs bar
+
 export default function MenuPage() {
   const { data: categories, isLoading, error } = useMenu()
   const [activeCategory, setActiveCategory] = useState(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [modifierItem, setModifierItem] = useState(null)
+  const observerRef = useRef(null)
+  const visibleSet = useRef(new Set())
 
-  const visible = activeCategory
-    ? categories?.filter(c => c.id === activeCategory)
-    : categories
+  // Scroll spy: detecta qué sección está visible y actualiza el tab activo
+  useEffect(() => {
+    if (!categories?.length) return
+    observerRef.current?.disconnect()
+    visibleSet.current.clear()
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const id = entry.target.id.replace('cat-', '')
+          if (entry.isIntersecting) visibleSet.current.add(id)
+          else visibleSet.current.delete(id)
+        })
+        const first = categories.find(c => visibleSet.current.has(c.id))
+        setActiveCategory(first?.id ?? null)
+      },
+      { rootMargin: `-${TABS_HEIGHT + 10}px 0px -50% 0px`, threshold: 0 }
+    )
+
+    categories.forEach(cat => {
+      const el = document.getElementById(`cat-${cat.id}`)
+      if (el) observerRef.current.observe(el)
+    })
+
+    return () => observerRef.current?.disconnect()
+  }, [categories])
+
+  // Click en tab: scroll suave a la sección con offset del sticky bar
+  function handleTabSelect(id) {
+    if (id === null) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    const el = document.getElementById(`cat-${id}`)
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - TABS_HEIGHT - 12
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }
 
   return (
     <div className="min-h-screen bg-celestina-crema">
@@ -27,7 +67,7 @@ export default function MenuPage() {
         <CategoryTabs
           categories={categories ?? []}
           activeId={activeCategory}
-          onSelect={setActiveCategory}
+          onSelect={handleTabSelect}
         />
       )}
 
@@ -69,19 +109,13 @@ export default function MenuPage() {
 
           {!isLoading && !error && (
             <div className="pt-2">
-              {visible?.map(cat => (
+              {categories?.map(cat => (
                 <MenuSection
                   key={cat.id}
                   category={cat}
                   onAddWithModifiers={setModifierItem}
                 />
               ))}
-
-              {visible?.length === 0 && (
-                <p className="text-sm py-12 text-center" style={{ color: '#7c8a93' }}>
-                  No hay platos disponibles en esta categoría.
-                </p>
-              )}
             </div>
           )}
         </main>

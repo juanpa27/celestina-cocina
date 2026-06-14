@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
@@ -7,6 +8,7 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
   const addItem = useCartStore(s => s.addItem)
   const decrement = useCartStore(s => s.decrement)
   const getQuantity = useCartStore(s => s.getQuantity)
+  const [flash, setFlash] = useState(false)
 
   const hasModifiers = item.modifierGroups?.length > 0
   const qty = hasModifiers ? 0 : getQuantity(item.id, undefined)
@@ -16,6 +18,8 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
       onAddWithModifiers(item)
     } else {
       addItem({ menuItemId: item.id, itemName: item.name, basePrice: item.price, selectedModifier: null })
+      setFlash(true)
+      setTimeout(() => setFlash(false), 450)
     }
   }
 
@@ -24,12 +28,14 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
   }
 
   return (
-    <div
+    <motion.div
       className="bg-white rounded-2xl overflow-hidden flex flex-col"
-      style={{
-        border: '1px solid #e3edf2',
-        boxShadow: '0 2px 10px rgba(29,94,140,0.04)',
-      }}
+      animate={flash
+        ? { boxShadow: ['0 2px 10px rgba(29,94,140,0.04)', '0 0 0 3px rgba(34,197,94,0.45)', '0 2px 10px rgba(29,94,140,0.04)'] }
+        : { boxShadow: '0 2px 10px rgba(29,94,140,0.04)' }
+      }
+      transition={{ duration: 0.45 }}
+      style={{ border: '1px solid #e3edf2' }}
     >
       {/* Imagen */}
       <div className="w-full overflow-hidden relative" style={{ aspectRatio: '16/10' }}>
@@ -42,10 +48,16 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
           />
         ) : (
           <div
-            className="w-full h-full flex items-center justify-center font-display text-4xl select-none"
-            style={{ background: '#eaf3f8', color: '#5b96bf' }}
+            className="w-full h-full flex items-center justify-center select-none"
+            style={{
+              background: 'repeating-conic-gradient(#dbe9f0 0% 25%, #eaf3f8 0% 50%) 0 0 / 22px 22px',
+            }}
           >
-            🍽
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.35 }}>
+              <circle cx="20" cy="20" r="18" stroke="#1d5e8c" strokeWidth="2"/>
+              <path d="M13 14v4a4 4 0 0 0 3 3.87V28h2v-6.13A4 4 0 0 0 21 18v-4h-2v4a2 2 0 0 1-4 0v-4h-2z" fill="#1d5e8c"/>
+              <path d="M25 14c0 0 2 2 2 6s-2 6-2 6v2h2V14h-2z" fill="#1d5e8c"/>
+            </svg>
           </div>
         )}
       </div>
@@ -143,6 +155,6 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

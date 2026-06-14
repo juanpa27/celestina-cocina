@@ -1,43 +1,54 @@
+import { useEffect, useRef } from 'react'
+
 export default function CategoryTabs({ categories = [], activeId, onSelect }) {
+  const stripRef = useRef(null)
+  const btnRefs = useRef({})
+
+  // Auto-scroll el strip para mantener el tab activo visible
+  useEffect(() => {
+    const key = activeId ?? '__todo__'
+    const btn = btnRefs.current[key]
+    const strip = stripRef.current
+    if (!btn || !strip) return
+    const target = btn.offsetLeft - strip.offsetWidth / 2 + btn.offsetWidth / 2
+    strip.scrollTo({ left: target, behavior: 'smooth' })
+  }, [activeId])
+
+  const activeStyle = { background: '#1d5e8c', color: '#fff', borderColor: '#1d5e8c' }
+  const idleStyle   = { background: '#fff', color: '#1d5e8c', borderColor: '#5b96bf' }
+  const btnClass    = 'flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-bold border transition-colors duration-150 whitespace-nowrap active:opacity-70'
+
   return (
     <div
-      className="flex gap-2.5 overflow-x-auto px-5 py-4 scrollbar-none"
-      style={{
-        scrollbarWidth: 'none',
-        WebkitOverflowScrolling: 'touch',
-        scrollSnapType: 'x proximity',
-      }}
+      className="sticky z-20 bg-celestina-crema"
+      style={{ top: 0, borderBottom: '1px solid #e3edf2' }}
     >
-      <button
-        onClick={() => onSelect(null)}
-        className="flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-bold border transition-colors duration-150 active:opacity-70"
-        style={{
-          scrollSnapAlign: 'start',
-          minHeight: '36px',
-          ...(activeId === null
-            ? { background: '#1d5e8c', color: '#fff', borderColor: '#1d5e8c' }
-            : { background: '#fff', color: '#1d5e8c', borderColor: '#5b96bf' }),
-        }}
+      <div
+        ref={stripRef}
+        className="flex gap-2.5 overflow-x-auto px-5 py-3 scrollbar-none"
+        style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
       >
-        Todo
-      </button>
-
-      {categories.map(cat => (
         <button
-          key={cat.id}
-          onClick={() => onSelect(cat.id)}
-          className="flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-bold border transition-colors duration-150 whitespace-nowrap active:opacity-70"
-          style={{
-            scrollSnapAlign: 'start',
-            minHeight: '36px',
-            ...(activeId === cat.id
-              ? { background: '#1d5e8c', color: '#fff', borderColor: '#1d5e8c' }
-              : { background: '#fff', color: '#1d5e8c', borderColor: '#5b96bf' }),
-          }}
+          ref={el => { btnRefs.current['__todo__'] = el }}
+          onClick={() => onSelect(null)}
+          className={btnClass}
+          style={{ minHeight: 36, ...(activeId === null ? activeStyle : idleStyle) }}
         >
-          {cat.name}
+          Todo
         </button>
-      ))}
+
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            ref={el => { btnRefs.current[cat.id] = el }}
+            onClick={() => onSelect(cat.id)}
+            className={btnClass}
+            style={{ minHeight: 36, ...(activeId === cat.id ? activeStyle : idleStyle) }}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
