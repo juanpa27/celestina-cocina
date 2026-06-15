@@ -153,6 +153,21 @@ Reemplazan al ejemplo genérico (Pastas/Salsas/Bebidas/Postres) del mock visual:
 5. **Guarniciones** — Papas fritas, Arroz con queso cremoso, Ensalada fresca Celestina, Pasta artesanal a la crema. Categoría propia, items normales (no modificador).
 6. **Pastas Artesanales** — Tagliatelles, Ñoquis de papa, Ravioles (carne, jamón y queso, pollo, ricota). Grupo de modificador **"Salsa"** (obligatorio, single-select). `notes` en items: "preparadas al momento, ~30 min" (también aplica a Milanesas).
 7. **Especiales** — Lasaña, Canelones (carne, jamón y queso, choclo). `notes`: "Incluye tostadas a la provenzal y queso parmesano rallado".
+8. **Bebidas** — Gaseosas, jugos, aguas. Items simples sin modificadores (mismo flujo `+`/`-` que Pastas Congeladas). Ver sección "Bebidas".
+
+## Bebidas
+
+Categoría agregada después del menú inicial. Decisiones de modelo:
+
+- **Una sola categoría "Bebidas"** (no categorías separadas por tipo). Esto deja el hook de checkout ("agregá una bebida") como un simple filtro `where category = 'Bebidas'`.
+- **Subtipo** (Gaseosa / Jugo / Agua) va en una columna nueva `menu_items.subcategory text` (nullable, null para todos los items de comida). Es genérica y reutilizable a futuro. Se ejecuta una vez: `alter table menu_items add column if not exists subcategory text;`
+- **El volumen va DENTRO del `name`**, ej. `"Coca-Cola 500 ml"`, NO en `notes`. Razón crítica: el snapshot del pedido (`order_items`) solo guarda `item_name` e `item_price` — no guarda `notes` ni `subcategory`. Si el volumen no estuviera en el nombre, el pedido en WhatsApp diría "1x Coca-Cola" y se perdería el tamaño (y son SKUs distintos con precios distintos: 500 ml vs 1.5 L).
+- Bebidas **no** tienen `menu_item_modifier_groups` asociados.
+
+### Hook "agregá una bebida" en checkout
+
+- Al confirmar el pedido, si el carrito **no contiene ningún item de categoría "Bebidas"**, mostrar un paso intermedio ("¿Querés agregar una bebida? 🥤") con las bebidas disponibles, antes de seguir al `wa.me`.
+- Si el carrito ya tiene una bebida, saltar el paso y continuar directo.
 
 ## Modificadores (variaciones de precio)
 

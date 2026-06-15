@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ShoppingBag, MapPin, Loader2, X, Minus, Plus, ChevronLeft, Send, Map } from 'lucide-react'
+import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, Map } from 'lucide-react'
 import LocationPicker from '../menu/LocationPicker'
 import toast from 'react-hot-toast'
 import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/cartStore'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { useConfig } from '../../hooks/useConfig'
+import { useMenu } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
 import { formatPrice, buildWhatsAppMessage } from '../../lib/utils'
 
@@ -28,9 +29,16 @@ export default function CartSidebar({ isOpen, onClose }) {
   const items = useCartStore(s => s.items)
   const addItem = useCartStore(s => s.addItem)
   const decrement = useCartStore(s => s.decrement)
+  const getQuantity = useCartStore(s => s.getQuantity)
   const clearCart = useCartStore(s => s.clearCart)
   const totalItems = useCartStore(selectTotalItems)
   const totalPrice = useCartStore(selectTotalPrice)
+
+  const { data: menu } = useMenu()
+  // Bebidas para el paso "agregá una bebida" (detección por categoría, sin depender de subcategory)
+  const drinkItems = menu?.find(c => c.name === 'Bebidas')?.items ?? []
+  const drinkIds = new Set(drinkItems.map(d => d.id))
+  const cartHasDrink = items.some(i => drinkIds.has(i.menuItemId))
 
   const [step, setStep] = useState('cart')
   const [submitting, setSubmitting] = useState(false)
@@ -167,7 +175,7 @@ export default function CartSidebar({ isOpen, onClose }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 flex-shrink-0 bg-white" style={{ borderBottom: '1px solid #f0f5f8' }}>
-          {step === 'checkout' ? (
+          {step === 'checkout' || step === 'drinks' ? (
             <button onClick={() => setStep('cart')} className="flex items-center gap-1.5 text-sm font-bold" style={{ color: '#1d5e8c' }}>
               <ChevronLeft size={16} /> Volver al carrito
             </button>
@@ -253,7 +261,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                 </div>
 
                 <button
-                  onClick={() => setStep('checkout')}
+                  onClick={() => setStep(!cartHasDrink && drinkItems.length > 0 ? 'drinks' : 'checkout')}
                   className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75"
                   style={{ background: '#1d5e8c' }}
                 >
@@ -261,6 +269,79 @@ export default function CartSidebar({ isOpen, onClose }) {
                 </button>
               </>
             )}
+          </div>
+        )}
+
+        {/* ── STEP: AGREGÁ UNA BEBIDA ── */}
+        {step === 'drinks' && (
+          <div className="flex flex-col flex-1 p-5 gap-4">
+            <div>
+              <h3 className="font-display font-bold text-[18px] leading-tight" style={{ color: '#1d5e8c' }}>
+                ¿Querés agregar una bebida? 🥤
+              </h3>
+              <p className="text-sm mt-0.5" style={{ color: '#7c8a93' }}>
+                Sumá algo para tomar a tu pedido.
+              </p>
+            </div>
+
+            <div className="flex flex-col divide-y" style={{ borderColor: '#f0f5f8' }}>
+              {drinkItems.map(drink => {
+                const qty = getQuantity(drink.id, undefined)
+                return (
+                  <div key={drink.id} className="flex items-center justify-between py-3 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-semibold truncate text-celestina-tinta">
+                        {drink.name}
+                      </p>
+                      <p className="text-xs font-bold" style={{ color: '#1d5e8c' }}>
+                        {formatPrice(drink.price)}
+                      </p>
+                    </div>
+
+                    {qty === 0 ? (
+                      <button
+                        onClick={() => addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                        style={{ background: '#1d5e8c' }}
+                        aria-label={`Agregar ${drink.name}`}
+                      >
+                        <Plus size={16} strokeWidth={3} />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => decrement(`${drink.id}|`)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                          style={{ background: '#1d5e8c' }}
+                          aria-label="Quitar uno"
+                        >
+                          <Minus size={12} strokeWidth={3} />
+                        </button>
+                        <span className="text-sm font-bold w-5 text-center text-celestina-tinta">
+                          {qty}
+                        </span>
+                        <button
+                          onClick={() => addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                          style={{ background: '#1d5e8c' }}
+                          aria-label="Agregar uno más"
+                        >
+                          <Plus size={12} strokeWidth={3} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <button
+              onClick={() => setStep('checkout')}
+              className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 mt-auto"
+              style={{ background: '#1d5e8c' }}
+            >
+              {cartHasDrink ? 'Continuar al pedido →' : 'Seguir sin bebida →'}
+            </button>
           </div>
         )}
 

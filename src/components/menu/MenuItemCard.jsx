@@ -4,12 +4,15 @@ import { Plus, Minus } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 import { formatPrice } from '../../lib/utils'
 
-export default function MenuItemCard({ item, onAddWithModifiers }) {
+export default function MenuItemCard({ item, categoryName, onAddWithModifiers }) {
   const addItem = useCartStore(s => s.addItem)
   const decrement = useCartStore(s => s.decrement)
   const getQuantity = useCartStore(s => s.getQuantity)
   const [flash, setFlash] = useState(false)
 
+  // Las bebidas (fotos de producto, ej. botellas) se ven mejor contenidas y compactas,
+  // no recortadas a 16/10 como los platos.
+  const isDrink = categoryName === 'Bebidas'
   const hasModifiers = item.modifierGroups?.length > 0
   const qty = hasModifiers ? 0 : getQuantity(item.id, undefined)
 
@@ -38,12 +41,15 @@ export default function MenuItemCard({ item, onAddWithModifiers }) {
       style={{ border: '1px solid #e3edf2' }}
     >
       {/* Imagen */}
-      <div className="w-full overflow-hidden relative" style={{ aspectRatio: '16/10' }}>
+      <div
+        className="w-full overflow-hidden relative"
+        style={isDrink ? { height: 150, background: '#fbfdfe' } : { aspectRatio: '16/10' }}
+      >
         {item.image_url ? (
           <img
             src={item.image_url}
             alt={item.name}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${isDrink ? 'object-contain p-3' : 'object-cover'}`}
             loading="lazy"
           />
         ) : (

@@ -45,6 +45,7 @@ export default function MenuSection({ category, onAddWithModifiers }) {
           <motion.div key={item.id} variants={cardVariant}>
             <MenuItemCard
               item={item}
+              categoryName={category.name}
               onAddWithModifiers={onAddWithModifiers}
             />
           </motion.div>
