@@ -1,7 +1,9 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { MapPin, Crosshair, Loader2 } from 'lucide-react'
 
+// Solo se usa como centro VISUAL inicial del mapa. NUNCA como ubicación confirmable:
+// el pedido exige una posición fijada por el cliente (GPS o toque explícito en el mapa).
 const CAAGUAZU = { lat: -25.3652, lng: -56.0183 }
 
 const MAP_OPTIONS = {
@@ -26,45 +28,36 @@ async function reverseGeocode(lat, lng, apiKey) {
   }
 }
 
-export default function LocationPicker({ onConfirm, onCancel, initialAddress = '' }) {
+export default function LocationPicker({ onConfirm, onCancel }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: apiKey ?? '',
   })
 
-  const [pos, setPos] = useState(CAAGUAZU)
-  const [address, setAddress] = useState(initialAddress)
+  // pos === null ⇒ el cliente todavía NO fijó su ubicación. No hay pin ni se puede confirmar.
+  const [pos, setPos] = useState(null)
+  const [address, setAddress] = useState('')
   const [geocoding, setGeocoding] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [gpsFailed, setGpsFailed] = useState(false)
   const mapRef = useRef(null)
+  const autoGpsTried = useRef(false)
 
   const onMapLoad = useCallback(map => { mapRef.current = map }, [])
 
-  async function geocodePos(lat, lng) {
+  const geocodePos = useCallback(async (lat, lng) => {
     setGeocoding(true)
     const addr = await reverseGeocode(lat, lng, apiKey)
-    if (addr) setAddress(addr)
+    // delivery_address no puede quedar vacío: si el reverse geocode falla, usamos las coordenadas.
+    setAddress(addr || `Ubicación marcada (${lat.toFixed(5)}, ${lng.toFixed(5)})`)
     setGeocoding(false)
-  }
+  }, [apiKey])
 
-  function handleMapClick(e) {
-    const lat = e.latLng.lat()
-    const lng = e.latLng.lng()
-    setPos({ lat, lng })
-    geocodePos(lat, lng)
-  }
-
-  function handleMarkerDrag(e) {
-    const lat = e.latLng.lat()
-    const lng = e.latLng.lng()
-    setPos({ lat, lng })
-    geocodePos(lat, lng)
-  }
-
-  function handleMyLocation() {
-    if (!navigator.geolocation) return
+  const locateMe = useCallback(() => {
+    if (!navigator.geolocation) { setGpsFailed(true); return }
     setLocating(true)
+    setGpsFailed(false)
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         const newPos = { lat: coords.latitude, lng: coords.longitude }
@@ -74,12 +67,27 @@ export default function LocationPicker({ onConfirm, onCancel, initialAddress = '
         await geocodePos(newPos.lat, newPos.lng)
         setLocating(false)
       },
-      () => setLocating(false),
+      () => { setLocating(false); setGpsFailed(true) },
       { enableHighAccuracy: true, timeout: 8000 }
     )
+  }, [geocodePos])
+
+  // Al abrir el mapa, intentamos el GPS automáticamente una sola vez.
+  useEffect(() => {
+    if (isLoaded && !autoGpsTried.current) {
+      autoGpsTried.current = true
+      locateMe()
+    }
+  }, [isLoaded, locateMe])
+
+  function setFromMap(lat, lng) {
+    setPos({ lat, lng })
+    setGpsFailed(false)
+    geocodePos(lat, lng)
   }
 
   function handleConfirm() {
+    if (!pos) return
     onConfirm({ lat: pos.lat, lng: pos.lng, address })
   }
 
@@ -98,17 +106,19 @@ export default function LocationPicker({ onConfirm, onCancel, initialAddress = '
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={pos}
-            zoom={16}
+            center={pos ?? CAAGUAZU}
+            zoom={pos ? 17 : 14}
             options={MAP_OPTIONS}
             onLoad={onMapLoad}
-            onClick={handleMapClick}
+            onClick={e => setFromMap(e.latLng.lat(), e.latLng.lng())}
           >
-            <Marker
-              position={pos}
-              draggable
-              onDragEnd={handleMarkerDrag}
-            />
+            {pos && (
+              <Marker
+                position={pos}
+                draggable
+                onDragEnd={e => setFromMap(e.latLng.lat(), e.latLng.lng())}
+              />
+            )}
           </GoogleMap>
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ background: '#eaf3f8' }}>
@@ -119,7 +129,7 @@ export default function LocationPicker({ onConfirm, onCancel, initialAddress = '
         {/* Botón Mi ubicación encima del mapa */}
         <button
           type="button"
-          onClick={handleMyLocation}
+          onClick={locateMe}
           disabled={locating}
           className="absolute top-2 right-2 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg disabled:opacity-60"
           style={{ background: '#fff', color: '#1d5e8c', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
@@ -131,24 +141,32 @@ export default function LocationPicker({ onConfirm, onCancel, initialAddress = '
         </button>
       </div>
 
-      <p className="text-[11px] text-center" style={{ color: '#7c8a93' }}>
-        Tocá el mapa o arrastrá el pin para marcar tu puerta exacta
-      </p>
+      {/* Estado / instrucción según haya o no posición fijada */}
+      {!pos ? (
+        <p className="text-[11px] text-center font-semibold" style={{ color: gpsFailed ? '#b45309' : '#1d5e8c' }}>
+          {locating
+            ? 'Obteniendo tu ubicación…'
+            : gpsFailed
+              ? 'No pudimos obtener tu GPS. Tocá el mapa para marcar tu casa.'
+              : 'Permití el acceso a tu ubicación o tocá el mapa para marcar tu casa.'}
+        </p>
+      ) : (
+        <p className="text-[11px] text-center" style={{ color: '#7c8a93' }}>
+          Arrastrá el pin o tocá el mapa para ajustar tu puerta exacta
+        </p>
+      )}
 
-      {/* Dirección resultante */}
-      <div className="relative">
-        <MapPin size={14} className="absolute left-3 top-3.5 flex-shrink-0" style={{ color: '#5b96bf' }} />
-        <textarea
-          value={address}
-          onChange={e => setAddress(e.target.value)}
-          rows={2}
-          placeholder="Dirección detectada o escribila manualmente..."
-          className="w-full border rounded-xl pl-8 pr-3 py-3 text-sm resize-none outline-none focus:ring-2"
-          style={{ borderColor: '#dbe9f0', fontSize: '16px', fontFamily: 'inherit' }}
-        />
-        {geocoding && (
-          <Loader2 size={13} className="absolute right-3 top-3.5 animate-spin" style={{ color: '#5b96bf' }} />
-        )}
+      {/* Dirección detectada (solo lectura — viene del mapa, no se escribe a mano) */}
+      <div className="flex items-start gap-2 rounded-xl px-3 py-2.5" style={{ background: '#eaf3f8' }}>
+        <MapPin size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#5b96bf' }} />
+        <p className="text-sm flex-1 min-w-0" style={{ color: pos ? '#1c2b36' : '#7c8a93' }}>
+          {geocoding
+            ? 'Detectando dirección…'
+            : pos
+              ? address
+              : 'Tu dirección aparecerá acá al marcar tu ubicación.'}
+        </p>
+        {geocoding && <Loader2 size={13} className="animate-spin flex-shrink-0 mt-0.5" style={{ color: '#5b96bf' }} />}
       </div>
 
       {/* Acciones */}
@@ -164,7 +182,7 @@ export default function LocationPicker({ onConfirm, onCancel, initialAddress = '
         <button
           type="button"
           onClick={handleConfirm}
-          disabled={!address}
+          disabled={!pos || geocoding}
           className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
           style={{ background: '#1d5e8c' }}
         >
