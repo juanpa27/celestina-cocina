@@ -15,20 +15,26 @@ const schema = z.object({
   available:   z.boolean(),
 })
 
-export default function MenuItemEditor({ item, onClose }) {
+// Sirve para EDITAR (recibe `item`) o CREAR (recibe `categoryId` + `sortOrder`).
+export default function MenuItemEditor({ item = null, categoryId = null, sortOrder = 0, onClose }) {
   const queryClient = useQueryClient()
+  const isCreate = !item
+
+  // Id estable para el path de la imagen, también en modo crear (antes de existir en la BD).
+  const [itemId] = useState(() => item?.id ?? crypto.randomUUID())
   const [uploading, setUploading] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState(item.image_url ?? null)
+  const [previewUrl, setPreviewUrl] = useState(item?.image_url ?? null)
+  const [imageUrl, setImageUrl] = useState(item?.image_url ?? null)
   const fileRef = useRef()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:        item.name,
-      description: item.description ?? '',
-      price:       item.price,
-      notes:       item.notes ?? '',
-      available:   item.available,
+      name:        item?.name ?? '',
+      description: item?.description ?? '',
+      price:       item?.price ?? '',
+      notes:       item?.notes ?? '',
+      available:   item?.available ?? true,
     },
   })
 
@@ -45,7 +51,7 @@ export default function MenuItemEditor({ item, onClose }) {
     setUploading(true)
     try {
       const ext = file.name.split('.').pop()
-      const path = `${item.id}.${ext}`
+      const path = `${itemId}.${ext}`
       const { error: upErr } = await supabase.storage
         .from('menu-images')
         .upload(path, file, { upsert: true })
@@ -55,9 +61,13 @@ export default function MenuItemEditor({ item, onClose }) {
         .from('menu-images')
         .getPublicUrl(path)
 
-      await supabase.from('menu_items').update({ image_url: publicUrl }).eq('id', item.id)
+      // En edición persistimos ya; en creación se guarda recién en el INSERT del submit.
+      if (!isCreate) {
+        await supabase.from('menu_items').update({ image_url: publicUrl }).eq('id', item.id)
+        queryClient.invalidateQueries({ queryKey: ['menu'] })
+      }
       setPreviewUrl(publicUrl)
-      queryClient.invalidateQueries({ queryKey: ['menu'] })
+      setImageUrl(publicUrl)
       toast.success('Imagen actualizada')
     } catch {
       toast.error('No se pudo subir la imagen.')
@@ -67,23 +77,33 @@ export default function MenuItemEditor({ item, onClose }) {
   }
 
   async function onSubmit(data) {
-    const { error } = await supabase
-      .from('menu_items')
-      .update({
-        name:        data.name,
-        description: data.description || null,
-        price:       data.price,
-        notes:       data.notes || null,
-        available:   data.available,
-      })
-      .eq('id', item.id)
+    const payload = {
+      name:        data.name,
+      description: data.description || null,
+      price:       data.price,
+      notes:       data.notes || null,
+      available:   data.available,
+    }
+
+    let error
+    if (isCreate) {
+      ;({ error } = await supabase.from('menu_items').insert({
+        id:          itemId,
+        category_id: categoryId,
+        sort_order:  sortOrder,
+        image_url:   imageUrl,
+        ...payload,
+      }))
+    } else {
+      ;({ error } = await supabase.from('menu_items').update(payload).eq('id', item.id))
+    }
 
     if (error) {
       toast.error('No se pudo guardar.')
       return
     }
     queryClient.invalidateQueries({ queryKey: ['menu'] })
-    toast.success('Plato actualizado')
+    toast.success(isCreate ? 'Plato creado' : 'Plato actualizado')
     onClose()
   }
 
@@ -96,7 +116,9 @@ export default function MenuItemEditor({ item, onClose }) {
       <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden flex flex-col" style={{ maxHeight: '90dvh' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #f3f4f6' }}>
-          <h2 className="font-display font-bold text-lg" style={{ color: '#1c2b36' }}>Editar plato</h2>
+          <h2 className="font-display font-bold text-lg" style={{ color: '#1c2b36' }}>
+            {isCreate ? 'Nuevo plato' : 'Editar plato'}
+          </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100">
             <X size={18} style={{ color: '#6b7280' }} />
           </button>
@@ -110,8 +132,8 @@ export default function MenuItemEditor({ item, onClose }) {
             onClick={() => fileRef.current?.click()}
           >
             {previewUrl
-              ? <img src={previewUrl} alt={item.name} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center font-display text-5xl">🍽</div>
+              ? <img src={previewUrl} alt={previewUrl ? 'Vista previa' : ''} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex flex-col items-center justify-center gap-1 font-display text-5xl">🍽<span className="text-xs font-sans" style={{ color: '#5b96bf' }}>Tocá para subir foto</span></div>
             }
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ background: 'rgba(28,43,54,0.55)' }}>
@@ -134,7 +156,7 @@ export default function MenuItemEditor({ item, onClose }) {
             {/* Nombre */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Nombre</label>
-              <input {...register('name')} className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: errors.name ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }} />
+              <input {...register('name')} placeholder="Coca-Cola 500 ml" className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: errors.name ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }} />
               {errors.name && <p className="text-xs text-red-500 mt-0.5">{errors.name.message}</p>}
             </div>
 
@@ -147,7 +169,7 @@ export default function MenuItemEditor({ item, onClose }) {
             {/* Precio */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Precio (Gs)</label>
-              <input {...register('price')} type="number" step="1000" className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: errors.price ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }} />
+              <input {...register('price')} type="number" step="1000" placeholder="10000" className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: errors.price ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }} />
               {errors.price && <p className="text-xs text-red-500 mt-0.5">{errors.price.message}</p>}
             </div>
 
@@ -159,12 +181,12 @@ export default function MenuItemEditor({ item, onClose }) {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || uploading}
               className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
               style={{ background: '#1d5e8c' }}
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
-              Guardar cambios
+              {isCreate ? 'Crear plato' : 'Guardar cambios'}
             </button>
           </form>
         </div>

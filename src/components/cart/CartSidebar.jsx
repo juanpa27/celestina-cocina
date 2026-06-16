@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check } from 'lucide-react'
+import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check, CupSoda } from 'lucide-react'
 import LocationPicker from '../menu/LocationPicker'
 import toast from 'react-hot-toast'
 import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/cartStore'
@@ -25,11 +26,118 @@ const inputStyle = (hasError) => ({
   fontSize: '16px',
 })
 
+// Card de bebida del paso "agregá una bebida": thumbnail + feedback al agregar.
+function DrinkCard({ drink, index }) {
+  const addItem = useCartStore(s => s.addItem)
+  const decrement = useCartStore(s => s.decrement)
+  const qty = useCartStore(s => s.getQuantity(drink.id, undefined))
+  const [pulse, setPulse] = useState(false)
+
+  const active = qty > 0
+
+  function add() {
+    addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })
+    setPulse(true)
+    setTimeout(() => setPulse(false), 400)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 + index * 0.07, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="flex items-center gap-3 rounded-2xl p-2.5"
+      style={{
+        border: '1px solid',
+        borderColor: active ? '#bbf7d0' : '#e3edf2',
+        background: active ? '#f4fdf8' : '#fff',
+        boxShadow: active ? '0 5px 16px rgba(22,163,74,0.12)' : '0 2px 10px rgba(29,94,140,0.05)',
+        transition: 'background .25s ease, border-color .25s ease, box-shadow .25s ease',
+      }}
+    >
+      {/* Thumbnail */}
+      <motion.div
+        className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+        style={{ background: 'repeating-conic-gradient(#e3edf2 0% 25%, #eef5f9 0% 50%) 0 0 / 14px 14px' }}
+        animate={pulse ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        {drink.image_url ? (
+          <img src={drink.image_url} alt={drink.name} className="w-full h-full object-contain p-1" loading="lazy" />
+        ) : (
+          <CupSoda size={22} style={{ color: '#5b96bf' }} />
+        )}
+      </motion.div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-semibold leading-tight truncate text-celestina-tinta">{drink.name}</p>
+        <p className="text-[13px] font-bold mt-0.5" style={{ color: '#1d5e8c' }}>{formatPrice(drink.price)}</p>
+      </div>
+
+      {/* Control */}
+      <AnimatePresence mode="wait" initial={false}>
+        {!active ? (
+          <motion.button
+            key="add"
+            onClick={add}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+            style={{ background: '#1d5e8c' }}
+            aria-label={`Agregar ${drink.name}`}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            whileTap={{ scale: 0.88 }}
+          >
+            <Plus size={17} strokeWidth={2.5} />
+          </motion.button>
+        ) : (
+          <motion.div
+            key="stepper"
+            className="flex items-center gap-1 rounded-xl px-1.5 py-1 flex-shrink-0"
+            style={{ background: '#eaf3f8' }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          >
+            <button
+              onClick={() => decrement(`${drink.id}|`)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+              style={{ background: '#1d5e8c' }}
+              aria-label="Quitar uno"
+            >
+              <Minus size={13} strokeWidth={3} />
+            </button>
+            <motion.span
+              key={qty}
+              className="text-sm font-bold min-w-[20px] text-center text-celestina-tinta"
+              initial={{ scale: 1.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              {qty}
+            </motion.span>
+            <button
+              onClick={add}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+              style={{ background: '#1d5e8c' }}
+              aria-label="Agregar uno más"
+            >
+              <Plus size={13} strokeWidth={3} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 export default function CartSidebar({ isOpen, onClose }) {
   const items = useCartStore(s => s.items)
   const addItem = useCartStore(s => s.addItem)
   const decrement = useCartStore(s => s.decrement)
-  const getQuantity = useCartStore(s => s.getQuantity)
   const clearCart = useCartStore(s => s.clearCart)
   const totalItems = useCartStore(selectTotalItems)
   const totalPrice = useCartStore(selectTotalPrice)
@@ -294,55 +402,10 @@ export default function CartSidebar({ isOpen, onClose }) {
               </p>
             </div>
 
-            <div className="flex flex-col divide-y" style={{ borderColor: '#f0f5f8' }}>
-              {drinkItems.map(drink => {
-                const qty = getQuantity(drink.id, undefined)
-                return (
-                  <div key={drink.id} className="flex items-center justify-between py-3 gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-semibold truncate text-celestina-tinta">
-                        {drink.name}
-                      </p>
-                      <p className="text-xs font-bold" style={{ color: '#1d5e8c' }}>
-                        {formatPrice(drink.price)}
-                      </p>
-                    </div>
-
-                    {qty === 0 ? (
-                      <button
-                        onClick={() => addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0"
-                        style={{ background: '#1d5e8c' }}
-                        aria-label={`Agregar ${drink.name}`}
-                      >
-                        <Plus size={16} strokeWidth={3} />
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => decrement(`${drink.id}|`)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
-                          style={{ background: '#1d5e8c' }}
-                          aria-label="Quitar uno"
-                        >
-                          <Minus size={12} strokeWidth={3} />
-                        </button>
-                        <span className="text-sm font-bold w-5 text-center text-celestina-tinta">
-                          {qty}
-                        </span>
-                        <button
-                          onClick={() => addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
-                          style={{ background: '#1d5e8c' }}
-                          aria-label="Agregar uno más"
-                        >
-                          <Plus size={12} strokeWidth={3} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+            <div className="flex flex-col gap-2.5">
+              {drinkItems.map((drink, i) => (
+                <DrinkCard key={drink.id} drink={drink} index={i} />
+              ))}
             </div>
 
             <button

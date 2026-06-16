@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Pencil, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Pencil, Eye, EyeOff, Loader2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
@@ -11,6 +11,7 @@ export default function MenuAdminPage() {
   const { data: categories, isLoading } = useMenuAdmin()
   const queryClient = useQueryClient()
   const [editingItem, setEditingItem] = useState(null)
+  const [creatingCat, setCreatingCat] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
 
   async function toggleCategory(cat) {
@@ -114,13 +115,11 @@ export default function MenuAdminPage() {
           {/* Items de la categoría */}
           <div
             className="rounded-b-2xl overflow-hidden"
-            style={{
-              border: '1px solid #e5e7eb',
-              borderTop: 'none',
-              opacity: cat.active ? 1 : 0.5,
-              pointerEvents: cat.active ? 'auto' : 'none',
-            }}
+            style={{ border: '1px solid #e5e7eb', borderTop: 'none' }}
           >
+            {/* Wrapper que se atenúa/bloquea si la categoría está inactiva.
+                El botón "Agregar plato" queda FUERA, siempre usable. */}
+            <div style={{ opacity: cat.active ? 1 : 0.5, pointerEvents: cat.active ? 'auto' : 'none' }}>
             {cat.items?.length === 0 && (
               <p className="text-xs text-center py-4 bg-white" style={{ color: '#9ca3af' }}>Sin platos</p>
             )}
@@ -177,12 +176,30 @@ export default function MenuAdminPage() {
                 </div>
               </div>
             ))}
+            </div>
+
+            {/* Agregar plato — fuera del wrapper deshabilitado, siempre usable */}
+            <button
+              onClick={() => setCreatingCat(cat)}
+              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white text-sm font-bold transition-colors hover:bg-gray-50"
+              style={{ borderTop: '1px solid #f3f4f6', color: '#1d5e8c' }}
+            >
+              <Plus size={14} /> Agregar plato
+            </button>
           </div>
         </section>
       ))}
 
       {editingItem && (
         <MenuItemEditor item={editingItem} onClose={() => setEditingItem(null)} />
+      )}
+
+      {creatingCat && (
+        <MenuItemEditor
+          categoryId={creatingCat.id}
+          sortOrder={(creatingCat.items?.length ?? 0) + 1}
+          onClose={() => setCreatingCat(null)}
+        />
       )}
     </div>
   )
