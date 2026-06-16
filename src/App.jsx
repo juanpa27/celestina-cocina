@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import MenuPage from './pages/MenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
+import DashboardPage from './pages/admin/DashboardPage'
 import OrdersPage from './pages/admin/OrdersPage'
 import MenuAdminPage from './pages/admin/MenuAdminPage'
 import ConfigPage from './pages/admin/ConfigPage'
@@ -27,7 +28,8 @@ export default function App() {
 
         {/* Back office */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/pedidos" replace />} />
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard"     element={<DashboardPage />} />
           <Route path="pedidos"       element={<OrdersPage />} />
           <Route path="menu"          element={<MenuAdminPage />} />
           <Route path="configuracion" element={<ConfigPage />} />

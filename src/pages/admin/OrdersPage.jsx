@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
+import { ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useOrders } from '../../hooks/useOrders'
 import OrderCard from '../../components/admin/OrderCard'
@@ -65,6 +67,7 @@ export default function OrdersPage() {
   const pending  = orders?.filter(o => o.status === 'pendiente').length ?? 0
 
   return (
+    <div style={{ minHeight: '100%', background: 'linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%)' }}>
     <div className="p-5 max-w-3xl mx-auto">
 
       {/* Encabezado */}
@@ -82,38 +85,58 @@ export default function OrdersPage() {
 
       {/* Filtro por fecha */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-2" style={{ scrollbarWidth: 'none' }}>
-        {DATE_FILTERS.map(f => (
-          <button
-            key={String(f.value)}
-            onClick={() => setDateFilter(f.value)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
-            style={
-              dateFilter === f.value
+        {DATE_FILTERS.map(f => {
+          const count = applyDateFilter(orders, f.value)?.length ?? 0
+          const on = dateFilter === f.value
+          return (
+            <button
+              key={String(f.value)}
+              onClick={() => setDateFilter(f.value)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
+              style={on
                 ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
                 : { background: '#fff', color: '#6b7280', border: '1px solid #e5e7eb' }
-            }
-          >
-            {f.label}
-          </button>
-        ))}
+              }
+            >
+              {f.label}
+              <span
+                className="px-1.5 rounded-full text-[10px] leading-[16px]"
+                style={{ background: on ? 'rgba(242,193,78,0.2)' : '#f3f4f6', color: on ? '#f2c14e' : '#9ca3af' }}
+              >
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Filtro por estado */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-5" style={{ scrollbarWidth: 'none' }}>
-        {STATUS_FILTERS.map(f => (
-          <button
-            key={String(f.value)}
-            onClick={() => setStatusFilter(f.value)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
-            style={
-              statusFilter === f.value
+        {STATUS_FILTERS.map(f => {
+          const count = f.value
+            ? (byDate?.filter(o => o.status === f.value).length ?? 0)
+            : (byDate?.length ?? 0)
+          const on = statusFilter === f.value
+          return (
+            <button
+              key={String(f.value)}
+              onClick={() => setStatusFilter(f.value)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors"
+              style={on
                 ? { background: '#1d5e8c', color: '#fff', border: '1px solid #1d5e8c' }
                 : { background: '#fff', color: '#1d5e8c', border: '1px solid #dbe9f0' }
-            }
-          >
-            {f.label}
-          </button>
-        ))}
+              }
+            >
+              {f.label}
+              <span
+                className="px-1.5 rounded-full text-[10px] leading-[16px]"
+                style={{ background: on ? 'rgba(255,255,255,0.22)' : '#eaf3f8', color: on ? '#fff' : '#5b96bf' }}
+              >
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Lista */}
@@ -134,15 +157,26 @@ export default function OrdersPage() {
       {!isLoading && !error && (
         <div className="flex flex-col gap-3 pb-4">
           {visible?.length === 0 && (
-            <p className="text-sm text-center py-12" style={{ color: '#6b7280' }}>
-              No hay pedidos{statusFilter ? ` con estado "${statusFilter}"` : ''}{dateFilter ? ` en este período` : ''}.
-            </p>
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ background: 'repeating-conic-gradient(#e3edf2 0% 25%, #f2f7fb 0% 50%) 0 0 / 16px 16px' }}
+              >
+                <ShoppingBag size={30} style={{ color: '#5b96bf' }} />
+              </div>
+              <p className="text-sm text-center font-semibold" style={{ color: '#6b7280' }}>
+                No hay pedidos{statusFilter ? ` "${statusFilter}"` : ''}{dateFilter ? ' en este período' : ''}.
+              </p>
+            </div>
           )}
-          {visible?.map(order => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+          <AnimatePresence initial={false}>
+            {visible?.map(order => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </AnimatePresence>
         </div>
       )}
+    </div>
     </div>
   )
 }
