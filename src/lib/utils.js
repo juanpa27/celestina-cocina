@@ -2,6 +2,10 @@ export function formatPrice(amount) {
   return `Gs ${Number(amount).toLocaleString('es-PY')}`
 }
 
+export function vibrateFeedback(ms = 40) {
+  navigator.vibrate?.(ms)
+}
+
 // Líneas de items del carrito (checkout)
 function itemLines(items) {
   return items.map((i, idx) => {

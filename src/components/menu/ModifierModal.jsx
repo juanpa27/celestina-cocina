@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
-import { formatPrice } from '../../lib/utils'
+import { formatPrice, vibrateFeedback } from '../../lib/utils'
 
 export default function ModifierModal({ item, onClose }) {
   const addItem = useCartStore(s => s.addItem)
@@ -13,6 +13,7 @@ export default function ModifierModal({ item, onClose }) {
   const totalPrice = item.price + (selected?.extra_price ?? 0)
 
   function handleConfirm() {
+    vibrateFeedback()
     addItem({
       menuItemId: item.id,
       itemName: item.name,

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
-import { formatPrice } from '../../lib/utils'
+import { formatPrice, vibrateFeedback } from '../../lib/utils'
 
 export default function MenuItemCard({ item, categoryName, onAddWithModifiers }) {
   const addItem = useCartStore(s => s.addItem)
@@ -17,6 +17,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers })
   const qty = hasModifiers ? 0 : getQuantity(item.id, undefined)
 
   function handleAdd() {
+    vibrateFeedback()
     if (hasModifiers) {
       onAddWithModifiers(item)
     } else {
