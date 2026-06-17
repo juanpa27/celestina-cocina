@@ -210,6 +210,16 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 - Zona/costo de delivery: campo simple configurable (monto fijo o por zona), pendiente de definir si se modela en tabla propia o como config simple.
 - Horario de atención: posible campo de config para mostrar "cerrado" fuera de horario — pendiente de definir.
 
+## Implementado (sesión 2026-06-15)
+
+- **Open Graph**: `public/og-image.jpg` estático 1200×630. Meta tags OG/Twitter en `index.html` con URL absoluta `https://celestina-cocina.vercel.app/` (los scrapers de WhatsApp/Facebook exigen URL absoluta, no relativa). Twitter card = `summary_large_image`.
+- **Bebidas**: ver sección "Bebidas". Columna `menu_items.subcategory` ya creada en Supabase. Volumen en el `name` (no en notes) porque el snapshot del pedido solo guarda `item_name`/`item_price`. Hook "agregá una bebida" en el checkout (`CartSidebar`, paso `drinks`) con cards animadas (`DrinkCard`). Detección por categoría, NO depende de `subcategory`.
+- **Ubicación de entrega — solo GPS/mapa, sin carga manual** (decisión crítica). `LocationPicker` no arranca con pin default (era el bug de "ubicación random en Caaguazú"); pide GPS al abrir; si falla, el cliente toca/arrastra el pin (nunca texto libre); el texto es solo lectura (referencias van en Notas). El checkout exige `lat/lng` reales para confirmar. Se eliminó el textarea de dirección manual y el `useGeolocation` del checkout.
+- **Admin — crear platos**: botón "Agregar plato" por categoría en `MenuAdminPage`. `MenuItemEditor` ahora hace crear Y editar (genera UUID propio para que la foto se pueda subir antes de existir la fila). El botón queda fuera del wrapper deshabilitado → se puede cargar a categorías inactivas. **Falta**: borrar plato, crear/borrar categoría (borrar categoría es peligroso por `on delete cascade` → borra sus platos).
+- **/pedidos rediseñado**: franja lateral de color por estado, reloj de urgencia (verde/ámbar/rojo por antigüedad en pendientes), stepper de progreso, badge con ícono, conteos en chips, total con jerarquía, "Cancelar" como botón fantasma, estado vacío con identidad, animaciones (framer-motion). Módulo compartido nuevo: `src/lib/orderStatus.js` (`STATUS_META`, `STATUS_FLOW`, `urgencyColor`) — única fuente de verdad de colores/íconos/flujo.
+- **Dashboard** (`/admin/dashboard`, ahora es el landing de `/admin`): facturado (excluye cancelados), pedidos, ticket promedio, pendientes (con acceso rápido grande a /pedidos), desglose por estado y top productos. Toggle Hoy/Semana/Mes/Todo. Reusa `useOrders` (sin queries nuevas).
+- **Realtime**: la suscripción ya estaba en `useOrders.js`. Se activó la replicación: `alter publication supabase_realtime add table orders;` (hecho). El sonido de pedido nuevo (`playBeep` en `OrdersPage`) depende de eso + de una interacción previa del usuario (autoplay del navegador).
+
 ## Pendientes / decisiones abiertas
 
 - [ ] Definir si habrá costo de envío y cómo se calcula (fijo / por zona / gratis).
@@ -219,4 +229,6 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 - [ ] Definir si habrá un segundo usuario admin (ej: empleada) y permisos diferenciados.
 - [ ] Confirmar con la dueña si "Guarniciones" puede pedirse sola o solo como acompañamiento (afecta si se muestra como categoría visible siempre o solo sugerida junto a Milanesas).
 - [ ] Revisar si "Pasta artesanal a la crema" (que aparece como guarnición) duplica o se relaciona con los items de "Pastas Artesanales" — por ahora se trata como item independiente en Guarniciones.
-- [ ] Generar `supabase/schema.sql` con este esquema + seed completo de las ~7 categorías, ~30 productos y los 2 grupos de modificadores del menú real.
+- [x] Generar `schema.sql` + `seed.sql` con el esquema, las 7 categorías, ~30 productos y los 2 grupos de modificadores.
+- [ ] CRUD admin faltante: borrar plato, crear/borrar categoría (definir confirmación fuerte para borrar categoría por el `on delete cascade`).
+- [ ] Desbloqueo de audio en el primer click del back office (para que el `playBeep` del primer pedido no lo bloquee el navegador).
