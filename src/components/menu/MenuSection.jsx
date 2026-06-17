@@ -11,7 +11,7 @@ const cardVariant = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 }
 
-export default function MenuSection({ category, onAddWithModifiers }) {
+export default function MenuSection({ category, onAddWithModifiers, isOpen = true }) {
   if (!category.items?.length) return null
 
   return (
@@ -47,6 +47,7 @@ export default function MenuSection({ category, onAddWithModifiers }) {
               item={item}
               categoryName={category.name}
               onAddWithModifiers={onAddWithModifiers}
+              isOpen={isOpen}
             />
           </motion.div>
         ))}

@@ -175,6 +175,17 @@ export default function CartSidebar({ isOpen, onClose }) {
       return
     }
 
+    // Guard server-side: verificar que el negocio sigue abierto antes de insertar.
+    const { data: isOpenRow } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'is_open')
+      .single()
+    if (isOpenRow?.value === 'false') {
+      toast.error('El negocio está cerrado, no se pueden tomar pedidos ahora.')
+      return
+    }
+
     vibrateFeedback(60)
 
     setSubmitting(true)

@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save } from 'lucide-react'
+import { Loader2, Save, Store, Lock } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
+import { useIsOpen } from '../../hooks/useIsOpen'
 import { supabase } from '../../lib/supabase'
 
 const schema = z.object({
@@ -22,7 +23,24 @@ async function upsertConfig(key, value) {
 
 export default function ConfigPage() {
   const { data: config, isLoading } = useConfig()
+  const { data: isOpen = true } = useIsOpen()
+  const [togglingOpen, setTogglingOpen] = useState(false)
   const queryClient = useQueryClient()
+
+  async function toggleOpen() {
+    setTogglingOpen(true)
+    const next = !isOpen
+    const { error } = await supabase
+      .from('app_config')
+      .upsert({ key: 'is_open', value: String(next) }, { onConflict: 'key' })
+    if (error) {
+      toast.error('No se pudo cambiar el estado.')
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['is_open'] })
+      toast.success(next ? 'Negocio abierto ✓' : 'Negocio cerrado')
+    }
+    setTogglingOpen(false)
+  }
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -58,6 +76,46 @@ export default function ConfigPage() {
       <p className="text-xs mb-6" style={{ color: '#9ca3af' }}>
         Cambios guardados aquí se aplican inmediatamente al menú público.
       </p>
+
+      {/* Toggle abrir / cerrar negocio */}
+      <button
+        onClick={toggleOpen}
+        disabled={togglingOpen || isLoading}
+        className="w-full flex items-center gap-4 p-4 rounded-2xl mb-6 transition-colors disabled:opacity-60"
+        style={{
+          background: isOpen ? '#f0fdf4' : '#fef2f2',
+          border: `2px solid ${isOpen ? '#86efac' : '#fca5a5'}`,
+        }}
+      >
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: isOpen ? '#16a34a' : '#dc2626' }}
+        >
+          {togglingOpen
+            ? <Loader2 size={20} color="#fff" className="animate-spin" />
+            : isOpen
+              ? <Store size={20} color="#fff" />
+              : <Lock size={20} color="#fff" />
+          }
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-bold text-sm" style={{ color: isOpen ? '#15803d' : '#b91c1c' }}>
+            {isOpen ? 'Negocio abierto' : 'Negocio cerrado'}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: isOpen ? '#4ade80' : '#f87171' }}>
+            {isOpen ? 'Los clientes pueden hacer pedidos' : 'El menú se ve pero no se aceptan pedidos'}
+          </p>
+        </div>
+        <div
+          className="flex-shrink-0 w-12 h-6 rounded-full relative transition-colors"
+          style={{ background: isOpen ? '#16a34a' : '#d1d5db' }}
+        >
+          <div
+            className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
+            style={{ left: isOpen ? 28 : 4 }}
+          />
+        </div>
+      </button>
 
       {isLoading ? (
         <div className="flex justify-center py-16">

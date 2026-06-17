@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useMenu } from '../hooks/useMenu'
+import { useIsOpen } from '../hooks/useIsOpen'
 import MenuHeader from '../components/menu/MenuHeader'
 import CategoryTabs from '../components/menu/CategoryTabs'
 import MenuSection from '../components/menu/MenuSection'
@@ -7,11 +8,13 @@ import ModifierModal from '../components/menu/ModifierModal'
 import CartSidebar from '../components/cart/CartSidebar'
 import CartFloating from '../components/cart/CartFloating'
 import AzulejoStrip from '../components/ui/AzulejoStrip'
+import ClosedBanner from '../components/ui/ClosedBanner'
 
 const TABS_HEIGHT = 52 // px — altura del sticky tabs bar
 
 export default function MenuPage() {
   const { data: categories, isLoading, error } = useMenu()
+  const { data: isOpen = true } = useIsOpen()
   const [activeCategory, setActiveCategory] = useState(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [modifierItem, setModifierItem] = useState(null)
@@ -71,6 +74,9 @@ export default function MenuPage() {
         />
       )}
 
+      {/* Banner negocio cerrado */}
+      {!isOpen && <ClosedBanner />}
+
       {/* Layout principal */}
       <div
         className="flex gap-7 px-5 pb-24 md:pb-10 items-start"
@@ -114,6 +120,7 @@ export default function MenuPage() {
                   key={cat.id}
                   category={cat}
                   onAddWithModifiers={setModifierItem}
+                  isOpen={isOpen}
                 />
               ))}
             </div>
@@ -175,8 +182,8 @@ export default function MenuPage() {
         </div>
       </footer>
 
-      {/* Floating cart — solo mobile */}
-      <CartFloating onOpen={() => setCartOpen(true)} />
+      {/* Floating cart — solo mobile, oculto si el negocio está cerrado */}
+      {isOpen && <CartFloating onOpen={() => setCartOpen(true)} />}
 
       {/* Modal de modificadores */}
       {modifierItem && (
