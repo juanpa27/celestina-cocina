@@ -10,7 +10,7 @@ import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/ca
 import { useConfig } from '../../hooks/useConfig'
 import { useMenu } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
-import { formatPrice, buildWhatsAppMessage } from '../../lib/utils'
+import { formatPrice, buildWhatsAppMessage, vibrateFeedback } from '../../lib/utils'
 
 // La dirección de entrega NO va en el form: se obtiene solo del mapa (GPS o pin),
 // nunca como texto libre. Acá solo validamos los datos de contacto.
@@ -36,6 +36,7 @@ function DrinkCard({ drink, index }) {
   const active = qty > 0
 
   function add() {
+    vibrateFeedback()
     addItem({ menuItemId: drink.id, itemName: drink.name, basePrice: drink.price, selectedModifier: null })
     setPulse(true)
     setTimeout(() => setPulse(false), 400)
@@ -173,6 +174,8 @@ export default function CartSidebar({ isOpen, onClose }) {
       toast.error('Marcá tu ubicación en el mapa para continuar.')
       return
     }
+
+    vibrateFeedback(60)
 
     setSubmitting(true)
 
