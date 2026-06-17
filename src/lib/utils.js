@@ -6,6 +6,20 @@ export function vibrateFeedback(ms = 40) {
   navigator.vibrate?.(ms)
 }
 
+// Verifica si la hora actual cae dentro del horario de atención.
+// open/close son strings "HH:MM". Si alguno falta, devuelve true (sin restricción).
+export function isWithinSchedule(open, close) {
+  if (!open || !close) return true
+  const [oh, om] = open.split(':').map(Number)
+  const [ch, cm] = close.split(':').map(Number)
+  const now = new Date()
+  const nowMins = now.getHours() * 60 + now.getMinutes()
+  const openMins = oh * 60 + om
+  const closeMins = ch * 60 + cm
+  if (closeMins > openMins) return nowMins >= openMins && nowMins < closeMins
+  return nowMins >= openMins || nowMins < closeMins // horario que cruza medianoche
+}
+
 // Líneas de items del carrito (checkout)
 function itemLines(items) {
   return items.map((i, idx) => {

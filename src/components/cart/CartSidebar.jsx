@@ -10,7 +10,7 @@ import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/ca
 import { useConfig } from '../../hooks/useConfig'
 import { useMenu } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
-import { formatPrice, buildWhatsAppMessage, vibrateFeedback } from '../../lib/utils'
+import { formatPrice, buildWhatsAppMessage, vibrateFeedback, isWithinSchedule } from '../../lib/utils'
 
 // La dirección de entrega NO va en el form: se obtiene solo del mapa (GPS o pin),
 // nunca como texto libre. Acá solo validamos los datos de contacto.
@@ -175,13 +175,13 @@ export default function CartSidebar({ isOpen, onClose }) {
       return
     }
 
-    // Guard server-side: verificar que el negocio sigue abierto antes de insertar.
-    const { data: isOpenRow } = await supabase
+    // Guard server-side: verificar estado manual + horario antes de insertar.
+    const { data: configRows } = await supabase
       .from('app_config')
-      .select('value')
-      .eq('key', 'is_open')
-      .single()
-    if (isOpenRow?.value === 'false') {
+      .select('key, value')
+      .in('key', ['is_open', 'schedule_open', 'schedule_close'])
+    const cfg = Object.fromEntries((configRows ?? []).map(r => [r.key, r.value]))
+    if (cfg.is_open === 'false' || !isWithinSchedule(cfg.schedule_open, cfg.schedule_close)) {
       toast.error('El negocio está cerrado, no se pueden tomar pedidos ahora.')
       return
     }

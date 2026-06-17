@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save, Store, Lock } from 'lucide-react'
+import { Loader2, Save, Store, Lock, Clock } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
@@ -12,6 +12,8 @@ import { supabase } from '../../lib/supabase'
 const schema = z.object({
   whatsapp_negocio: z.string().min(6, 'Ingresá el número'),
   whatsapp_ajaka:   z.string().optional(),
+  schedule_open:    z.string().optional(),
+  schedule_close:   z.string().optional(),
 })
 
 async function upsertConfig(key, value) {
@@ -44,7 +46,7 @@ export default function ConfigPage() {
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { whatsapp_negocio: '', whatsapp_ajaka: '' },
+    defaultValues: { whatsapp_negocio: '', whatsapp_ajaka: '', schedule_open: '', schedule_close: '' },
   })
 
   // Cargar valores actuales cuando llegan de la DB
@@ -53,6 +55,8 @@ export default function ConfigPage() {
       reset({
         whatsapp_negocio: config.whatsapp_negocio ?? '',
         whatsapp_ajaka:   config.whatsapp_ajaka   ?? '',
+        schedule_open:    config.schedule_open    ?? '',
+        schedule_close:   config.schedule_close   ?? '',
       })
     }
   }, [config, reset])
@@ -61,7 +65,9 @@ export default function ConfigPage() {
     try {
       await Promise.all([
         upsertConfig('whatsapp_negocio', data.whatsapp_negocio),
-        upsertConfig('whatsapp_ajaka',   data.whatsapp_ajaka ?? ''),
+        upsertConfig('whatsapp_ajaka',   data.whatsapp_ajaka   ?? ''),
+        upsertConfig('schedule_open',    data.schedule_open    ?? ''),
+        upsertConfig('schedule_close',   data.schedule_close   ?? ''),
       ])
       queryClient.invalidateQueries({ queryKey: ['config'] })
       toast.success('Configuración guardada')
@@ -183,6 +189,41 @@ export default function ConfigPage() {
                   placeholder="595976444335"
                   className="flex-1 px-3 py-2.5 text-sm outline-none"
                   style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Horario de atención ── */}
+          <div className="bg-white rounded-2xl p-5 flex flex-col gap-4" style={{ border: '1px solid #e5e7eb' }}>
+            <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <Clock size={18} style={{ color: '#1d5e8c' }} />
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Horario de atención</p>
+                <p className="text-xs" style={{ color: '#9ca3af' }}>El menú se cierra automáticamente fuera de este horario. Dejá vacío para no aplicar horario.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                  Apertura
+                </label>
+                <input
+                  {...register('schedule_open')}
+                  type="time"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none"
+                  style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                  Cierre
+                </label>
+                <input
+                  {...register('schedule_close')}
+                  type="time"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none"
+                  style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
                 />
               </div>
             </div>

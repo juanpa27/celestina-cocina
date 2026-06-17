@@ -1,14 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { isWithinSchedule } from '../lib/utils'
 
 async function fetchIsOpen() {
   const { data, error } = await supabase
     .from('app_config')
-    .select('value')
-    .eq('key', 'is_open')
-    .single()
-  if (error) return true // si no existe la clave, asumir abierto
-  return data.value === 'true'
+    .select('key, value')
+    .in('key', ['is_open', 'schedule_open', 'schedule_close'])
+  if (error) return true
+  const map = Object.fromEntries((data ?? []).map(r => [r.key, r.value]))
+  if (map.is_open === 'false') return false
+  return isWithinSchedule(map.schedule_open, map.schedule_close)
 }
 
 export function useIsOpen() {
