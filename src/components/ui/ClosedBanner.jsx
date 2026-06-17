@@ -3,25 +3,20 @@ import { Clock } from 'lucide-react'
 export default function ClosedBanner() {
   return (
     <div
-      className="sticky z-20 flex items-center gap-3 px-4 py-3.5"
+      className="flex items-center gap-3 mx-5 mt-4 px-4 py-3 rounded-xl"
       style={{
-        top: 100, // debajo del header + tabs
-        background: '#1c2b36',
-        borderBottom: '3px solid #f2c14e',
+        background: '#fdf6ec',
+        border: '1px solid #f0dfc0',
+        borderLeft: '4px solid #d4924a',
       }}
     >
-      <div
-        className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-        style={{ background: 'rgba(242,193,78,0.15)' }}
-      >
-        <Clock size={18} color="#f2c14e" strokeWidth={2} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-display font-bold text-sm leading-tight" style={{ color: '#fff' }}>
-          Estamos cerrados por ahora
+      <Clock size={16} strokeWidth={2} style={{ color: '#d4924a', flexShrink: 0 }} />
+      <div className="min-w-0">
+        <p className="font-semibold text-sm leading-tight" style={{ color: '#5c3d1e' }}>
+          Cerrado por ahora
         </p>
-        <p className="text-xs mt-0.5 leading-snug" style={{ color: '#7c9db5' }}>
-          Podés ver el menú, pero no se pueden tomar pedidos en este momento.
+        <p className="text-xs mt-0.5 leading-snug" style={{ color: '#a07850' }}>
+          Podés ver el menú, pero no tomamos pedidos en este momento.
         </p>
       </div>
     </div>
