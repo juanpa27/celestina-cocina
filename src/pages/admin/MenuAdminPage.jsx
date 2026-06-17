@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Pencil, Eye, EyeOff, Loader2, Plus } from 'lucide-react'
+import { Pencil, Eye, EyeOff, Loader2, Plus, FolderPlus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
@@ -13,6 +13,34 @@ export default function MenuAdminPage() {
   const [editingItem, setEditingItem] = useState(null)
   const [creatingCat, setCreatingCat] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
+  const [newCatOpen, setNewCatOpen] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [savingCat, setSavingCat] = useState(false)
+  const newCatInputRef = useRef(null)
+
+  useEffect(() => {
+    if (newCatOpen) newCatInputRef.current?.focus()
+  }, [newCatOpen])
+
+  async function createCategory(e) {
+    e.preventDefault()
+    const name = newCatName.trim()
+    if (!name) return
+    setSavingCat(true)
+    const sortOrder = (categories?.length ?? 0) + 1
+    const { error } = await supabase
+      .from('categories')
+      .insert({ name, sort_order: sortOrder, active: true })
+    if (error) {
+      toast.error('No se pudo crear la categoría.')
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['menu'] })
+      toast.success(`Categoría "${name}" creada.`)
+      setNewCatName('')
+      setNewCatOpen(false)
+    }
+    setSavingCat(false)
+  }
 
   async function toggleCategory(cat) {
     setTogglingId(`cat-${cat.id}`)
@@ -189,6 +217,75 @@ export default function MenuAdminPage() {
           </div>
         </section>
       ))}
+
+      {/* Botón nueva categoría */}
+      {!isLoading && (
+        <button
+          onClick={() => setNewCatOpen(true)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-colors hover:opacity-85 mt-2"
+          style={{ background: '#f2c14e', color: '#1c2b36', border: '2px dashed #e5b83a' }}
+        >
+          <FolderPlus size={16} /> Nueva categoría
+        </button>
+      )}
+
+      {/* Modal nueva categoría */}
+      {newCatOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.45)' }}
+          onClick={e => { if (e.target === e.currentTarget) setNewCatOpen(false) }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-bold text-lg" style={{ color: '#1c2b36' }}>
+                Nueva categoría
+              </h2>
+              <button onClick={() => setNewCatOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={createCategory} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#374151' }}>
+                  Nombre
+                </label>
+                <input
+                  ref={newCatInputRef}
+                  type="text"
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  placeholder="Ej: Postres, Entradas…"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none transition-colors"
+                  style={{ border: '1.5px solid #d1d5db', color: '#1c2b36' }}
+                  onFocus={e => e.target.style.borderColor = '#1d5e8c'}
+                  onBlur={e => e.target.style.borderColor = '#d1d5db'}
+                  maxLength={60}
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setNewCatOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                  style={{ background: '#f3f4f6', color: '#6b7280' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCat || !newCatName.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  style={{ background: '#1d5e8c', color: '#fff' }}
+                >
+                  {savingCat ? <Loader2 size={14} className="animate-spin" /> : <FolderPlus size={14} />}
+                  {savingCat ? 'Guardando…' : 'Crear categoría'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {editingItem && (
         <MenuItemEditor item={editingItem} onClose={() => setEditingItem(null)} />

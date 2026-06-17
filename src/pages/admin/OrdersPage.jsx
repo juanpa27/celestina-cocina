@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, BellOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useOrders } from '../../hooks/useOrders'
 import OrderCard from '../../components/admin/OrderCard'
@@ -33,9 +33,17 @@ function applyDateFilter(orders, dateFilter) {
   return orders.filter(o => isAfter(new Date(o.created_at), since))
 }
 
+// Contexto compartido — se crea una sola vez tras la primera interacción del usuario.
+let _audioCtx = null
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new AudioContext()
+  return _audioCtx
+}
+
 function playBeep() {
   try {
-    const ctx = new AudioContext()
+    const ctx = getAudioCtx()
+    if (ctx.state === 'suspended') ctx.resume()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
@@ -45,12 +53,25 @@ function playBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
     osc.start()
     osc.stop(ctx.currentTime + 0.6)
-  } catch { /* AudioContext bloqueado por el navegador */ }
+  } catch { /* ignorar */ }
 }
 
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState(null)
   const [dateFilter, setDateFilter] = useState('today')
+  const [audioUnlocked, setAudioUnlocked] = useState(false)
+
+  function unlockAudio() {
+    try {
+      const ctx = getAudioCtx()
+      ctx.resume().then(() => {
+        setAudioUnlocked(true)
+        playBeep()
+      }).catch(() => setAudioUnlocked(true))
+    } catch {
+      setAudioUnlocked(true)
+    }
+  }
 
   const onNewOrder = useCallback(order => {
     playBeep()
@@ -69,6 +90,18 @@ export default function OrdersPage() {
   return (
     <div style={{ minHeight: '100%', background: 'linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%)' }}>
     <div className="p-5 max-w-3xl mx-auto">
+
+      {/* Banner desbloqueo de audio */}
+      {!audioUnlocked && (
+        <button
+          onClick={unlockAudio}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold mb-4 transition-opacity hover:opacity-80"
+          style={{ background: '#fef9c3', color: '#92400e', border: '1px solid #fde68a' }}
+        >
+          <BellOff size={13} />
+          Tocá aquí para activar el sonido de pedidos nuevos
+        </button>
+      )}
 
       {/* Encabezado */}
       <div className="flex items-center gap-3 mb-4">

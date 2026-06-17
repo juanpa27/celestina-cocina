@@ -130,12 +130,12 @@ export default function OrderCard({ order }) {
             #{order.order_number}
           </span>
           <StatusBadge status={order.status} />
-          <span className="text-xs font-semibold whitespace-nowrap" style={{ color: timeColor }}>
+          <span className="text-xs font-semibold truncate" style={{ color: timeColor }}>
             {isPending && '⏱ '}{timeAgo}
           </span>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="font-bold" style={{ color: '#1c2b36' }}>
+          <span className="font-bold whitespace-nowrap" style={{ color: '#1c2b36' }}>
             <span className="text-[11px] font-semibold mr-0.5" style={{ color: '#9ca3af' }}>{cur}</span>
             <span className="text-[17px] font-display">{amount.join(' ')}</span>
           </span>
