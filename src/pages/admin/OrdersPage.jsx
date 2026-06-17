@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
 import { ShoppingBag, BellOff } from 'lucide-react'
@@ -59,7 +59,10 @@ function playBeep() {
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState(null)
   const [dateFilter, setDateFilter] = useState('today')
-  const [audioUnlocked, setAudioUnlocked] = useState(false)
+  // Si el contexto ya está corriendo (navegación entre rutas), no mostrar el banner.
+  const [audioUnlocked, setAudioUnlocked] = useState(
+    () => _audioCtx !== null && _audioCtx.state === 'running'
+  )
 
   function unlockAudio() {
     try {
@@ -72,6 +75,14 @@ export default function OrdersPage() {
       setAudioUnlocked(true)
     }
   }
+
+  // Cualquier click en la página desbloquea el audio (no solo el banner).
+  useEffect(() => {
+    if (audioUnlocked) return
+    const handler = () => unlockAudio()
+    document.addEventListener('click', handler, { once: true })
+    return () => document.removeEventListener('click', handler)
+  }, [audioUnlocked])
 
   const onNewOrder = useCallback(order => {
     playBeep()
