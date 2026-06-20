@@ -46,7 +46,7 @@ export default function MenuPage() {
         const first = categories.find(c => visibleSet.current.has(c.id))
         setActiveCategory(first?.id ?? null)
       },
-      { rootMargin: `-${TABS_HEIGHT + 10}px 0px -50% 0px`, threshold: 0 }
+      { rootMargin: `-${TABS_HEIGHT + 10}px 0px -80px 0px`, threshold: 0 }
     )
 
     categories.forEach(cat => {
