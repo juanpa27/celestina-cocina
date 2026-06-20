@@ -52,6 +52,8 @@ export default function MenuHeader() {
         aria-hidden="true"
         style={{
           marginTop: 20,
+          marginLeft: -20,
+          marginRight: -20,
           height: 80,
           borderTop: '2.5px solid #f2c14e',
           '--s': '40px',
@@ -62,7 +64,7 @@ export default function MenuHeader() {
             'radial-gradient(27% 29% at right ,var(--_g)) calc(var(--s)/ 2) var(--s),' +
             'radial-gradient(27% 29% at left  ,var(--_g)) calc(var(--s)/-2) var(--s),' +
             'radial-gradient(29% 27% at top   ,var(--_g)) 0 calc(var(--s)/ 2),' +
-            'radial-gradient(29% 27% at bottom,var(--_g)) 0 calc(var(--s)/-2)' +
+            'radial-gradient(29% 27% at bottom,var(--_g)) 0 calc(var(--s)/-2) ' +
             'var(--c2)',
           backgroundSize: 'calc(2*var(--s)) calc(2*var(--s))',
         }}
