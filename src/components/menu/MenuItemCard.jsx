@@ -111,7 +111,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
               <motion.button
                 key="add-btn"
                 onClick={handleAdd}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-white font-bold text-sm"
                 style={{ background: '#1d5e8c' }}
                 aria-label={`Agregar ${item.name}`}
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -120,7 +120,8 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 whileTap={{ scale: 0.88 }}
               >
-                <Plus size={18} strokeWidth={2.5} />
+                <Plus size={15} strokeWidth={3} />
+                <span>Pedir</span>
               </motion.button>
             ) : (
               <motion.div
