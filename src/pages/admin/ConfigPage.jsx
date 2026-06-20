@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save, Store, Lock, Clock } from 'lucide-react'
+import { Loader2, Save, Store, Lock, Clock, UtensilsCrossed, Truck } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
@@ -133,7 +133,7 @@ export default function ConfigPage() {
           {/* ── WhatsApp del negocio ── */}
           <div className="bg-white rounded-2xl p-5 flex flex-col gap-4" style={{ border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
-              <span className="text-xl">🍽</span>
+              <UtensilsCrossed size={20} style={{ color: '#1d5e8c' }} />
               <div>
                 <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Celestina Cocina</p>
                 <p className="text-xs" style={{ color: '#9ca3af' }}>Recibe el detalle completo del pedido</p>
@@ -168,7 +168,7 @@ export default function ConfigPage() {
           {/* ── WhatsApp Ajaka ── */}
           <div className="bg-white rounded-2xl p-5 flex flex-col gap-4" style={{ border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
-              <span className="text-xl">🚗</span>
+              <Truck size={20} style={{ color: '#1d5e8c' }} />
               <div>
                 <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Ajaka (delivery)</p>
                 <p className="text-xs" style={{ color: '#9ca3af' }}>Recibe productos + dirección de entrega. Dejar vacío para no notificar.</p>

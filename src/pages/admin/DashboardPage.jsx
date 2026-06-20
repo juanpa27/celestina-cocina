@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
-import { ShoppingBag, Wallet, Receipt, ArrowRight, Clock } from 'lucide-react'
+import { ShoppingBag, Wallet, Receipt, ArrowRight, Clock, CheckCircle2 } from 'lucide-react'
 import { useOrders } from '../../hooks/useOrders'
 import { formatPrice } from '../../lib/utils'
 import { STATUS_META } from '../../lib/orderStatus'
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                 <p className="text-xs" style={{ color: '#cfe0ec' }}>
                   {pendientes > 0
                     ? `${pendientes} pendiente${pendientes > 1 ? 's' : ''} por atender`
-                    : 'Todo al día 🎉'}
+                    : <span className="inline-flex items-center gap-1">Todo al día <CheckCircle2 size={13} /></span>}
                 </p>
               </div>
               {pendientes > 0 && (

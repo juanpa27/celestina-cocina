@@ -2,7 +2,7 @@ import { useState, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { MapPin, Phone, User, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react'
+import { MapPin, Phone, User, ChevronDown, ChevronUp, MessageCircle, FileText } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -191,7 +191,7 @@ export default function OrderCard({ order }) {
                 </div>
                 {order.notes && (
                   <p className="text-xs sm:col-span-2 px-2 py-1.5 rounded-lg italic" style={{ background: '#fef9c3', color: '#854d0e' }}>
-                    📝 {order.notes}
+                    <span className="inline-flex items-center gap-1.5"><FileText size={12} />{order.notes}</span>
                   </p>
                 )}
               </div>

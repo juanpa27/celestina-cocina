@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check, CupSoda } from 'lucide-react'
+import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check, CupSoda, CreditCard } from 'lucide-react'
 import LocationPicker from '../menu/LocationPicker'
 import toast from 'react-hot-toast'
 import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/cartStore'
@@ -334,7 +334,7 @@ export default function CartSidebar({ isOpen, onClose }) {
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <ShoppingBag size={40} style={{ color: '#5b96bf', opacity: 0.5 }} />
                 <p className="text-sm text-center" style={{ color: '#7c8a93' }}>
-                  Tu carrito está vacío.<br />Agregá algo del menú 😊
+                  Tu carrito está vacío.<br />Agregá algo del menú
                 </p>
               </div>
             ) : (
@@ -545,7 +545,10 @@ export default function CartSidebar({ isOpen, onClose }) {
 
             {/* Métodos de pago */}
             <div className="text-xs rounded-xl p-3" style={{ background: '#eaf3f8', color: '#7c8a93' }}>
-              💳 Aceptamos: efectivo · Tigo Money · Ueno · transferencia
+              <span className="flex items-center gap-1.5">
+                <CreditCard size={13} />
+                Aceptamos: Efectivo · Transferencia
+              </span>
             </div>
 
             <button

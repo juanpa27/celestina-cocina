@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Pencil, Eye, EyeOff, Loader2, Plus, FolderPlus, X, Trash2, AlertTriangle } from 'lucide-react'
+import { Pencil, Eye, EyeOff, Loader2, Plus, FolderPlus, X, Trash2, AlertTriangle, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
@@ -282,7 +282,7 @@ export default function MenuAdminPage() {
                   >
                     {item.image_url
                       ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                      : '🍽'
+                      : <UtensilsCrossed size={20} style={{ color: '#5b96bf' }} />
                     }
                   </div>
 
