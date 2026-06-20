@@ -47,11 +47,11 @@ export default function MenuHeader() {
         {BUSINESS_SUBTITLE}
       </motion.p>
 
-      {/* Banda decorativa azulejo — arcos ojivales con flor de lis */}
+      {/* Banda decorativa azulejo — arcos finos + palmeta + gota colgante */}
       <div aria-hidden="true" style={{ marginTop: 20, lineHeight: 0 }}>
         <svg
           width="100%"
-          height="68"
+          height="62"
           xmlns="http://www.w3.org/2000/svg"
           style={{ display: 'block' }}
         >
@@ -59,54 +59,48 @@ export default function MenuHeader() {
             <pattern
               id="azulejo-band"
               x="0" y="0"
-              width="46" height="60"
+              width="38" height="56"
               patternUnits="userSpaceOnUse"
             >
-              {/* Fondo azulejo con sombra superior */}
-              <rect width="46" height="60" fill="#1d5e8c"/>
-              <rect width="46" height="14" fill="#184e74"/>
+              {/* Fondo azul liso */}
+              <rect width="38" height="56" fill="#1d5e8c"/>
 
-              {/* Arco ojival exterior (tipo cebolla, vértice al centro) */}
+              {/* Arco fino superior (vértice arriba, cúspides en los bordes) */}
               <path
-                d="M0,22 C2,10 18,16 23,6 C28,16 44,10 46,22"
-                fill="none" stroke="#d6ab2f" strokeWidth="1.8"
+                d="M0,10 C6,8 14,3 19,2 C24,3 32,8 38,10"
+                fill="none" stroke="#d6ab2f" strokeWidth="1.2"
               />
-              {/* Arco interior */}
-              <path
-                d="M0,25 C4,13 18,19 23,11 C28,19 42,13 46,25"
-                fill="none" stroke="#d6ab2f" strokeWidth="0.8" opacity="0.8"
-              />
+              {/* Puntos en las uniones de los arcos y en el vértice */}
+              <circle cx="0" cy="10" r="1.6" fill="#d6ab2f"/>
+              <circle cx="38" cy="10" r="1.6" fill="#d6ab2f"/>
+              <circle cx="19" cy="1.4" r="1" fill="#d6ab2f"/>
 
-              {/* Rombo dorado en el vértice */}
-              <path d="M23,1 L25.4,5 L23,9 L20.6,5 Z" fill="#f2c14e"/>
-              {/* Puntos donde se encuentran los arcos */}
-              <circle cx="0" cy="22" r="1.6" fill="#d6ab2f"/>
-              <circle cx="46" cy="22" r="1.6" fill="#d6ab2f"/>
-
-              {/* Flor de lis centrada en la celda */}
-              <g transform="translate(23,34)" fill="#d6ab2f">
-                {/* Pétalo central superior */}
-                <path d="M0,-18 C3.2,-12.5 3.2,-6.5 1.4,-3 L-1.4,-3 C-3.2,-6.5 -3.2,-12.5 0,-18 Z"/>
-                {/* Pétalo lateral izquierdo */}
-                <path d="M-1.5,-3.5 C-4.5,-9 -9,-13 -11,-8.5 C-12.2,-4.5 -8,-1.5 -2,-2 Z"/>
-                {/* Pétalo lateral derecho */}
-                <path d="M1.5,-3.5 C4.5,-9 9,-13 11,-8.5 C12.2,-4.5 8,-1.5 2,-2 Z"/>
-                {/* Banda horizontal (lazo) */}
-                <path d="M-10,-2.4 L10,-2.4 L10,1.6 L-10,1.6 Z"/>
-                {/* Cuerpo inferior que se abre */}
-                <path d="M-2,2 C-6.5,8 -9,15.5 -3.5,17.5 C-1,18.4 1,18.4 3.5,17.5 C9,15.5 6.5,8 2,2 Z"/>
-                {/* Acento brillante central */}
-                <path d="M0,-14.5 C1.8,-11 1.8,-6.5 0,-4.5 C-1.8,-6.5 -1.8,-11 0,-14.5 Z" fill="#f2c14e"/>
+              {/* Palmeta — abanico de pétalos radiados */}
+              <g transform="translate(19,27)" fill="#d6ab2f">
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-48)"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-32)"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-16)"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(16)"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(32)"/>
+                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(48)"/>
               </g>
+
+              {/* Base y gota colgante sólida */}
+              <circle cx="19" cy="29" r="1.6" fill="#d6ab2f"/>
+              <path
+                d="M19,30 C14.8,38 14.8,46 19,47.5 C23.2,46 23.2,38 19,30 Z"
+                fill="#d6ab2f"
+              />
             </pattern>
           </defs>
 
           {/* Línea dorada superior */}
           <line x1="0" y1="2.5" x2="100%" y2="2.5" stroke="#d6ab2f" strokeWidth="2.5"/>
           {/* Relleno del patrón */}
-          <rect x="0" y="4" width="100%" height="60" fill="url(#azulejo-band)"/>
+          <rect x="0" y="4" width="100%" height="56" fill="url(#azulejo-band)"/>
           {/* Línea dorada inferior */}
-          <line x1="0" y1="65.5" x2="100%" y2="65.5" stroke="#d6ab2f" strokeWidth="2.5"/>
+          <line x1="0" y1="61" x2="100%" y2="61" stroke="#d6ab2f" strokeWidth="2.5"/>
         </svg>
       </div>
     </header>
