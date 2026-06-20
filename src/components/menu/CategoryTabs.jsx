@@ -14,9 +14,9 @@ export default function CategoryTabs({ categories = [], activeId, onSelect }) {
     strip.scrollTo({ left: target, behavior: 'smooth' })
   }, [activeId])
 
-  const activeStyle = { background: '#1d5e8c', color: '#fff', borderColor: '#1d5e8c' }
-  const idleStyle   = { background: '#fff', color: '#1d5e8c', borderColor: '#5b96bf' }
-  const btnClass    = 'flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-bold border transition-colors duration-150 whitespace-nowrap active:opacity-70'
+  const activeStyle = { background: '#0f2744', color: '#fff', borderColor: '#0f2744' }
+  const idleStyle   = { background: '#fff', color: '#1a3a5c', borderColor: '#bfd0df' }
+  const btnClass    = 'flex-shrink-0 rounded-full px-5 py-2.5 text-xs font-bold border transition-colors duration-150 whitespace-nowrap active:opacity-70'
 
   return (
     <div
