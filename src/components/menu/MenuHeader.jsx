@@ -48,29 +48,37 @@ export default function MenuHeader() {
         {BUSINESS_SUBTITLE}
       </motion.p>
 
-      {/* Banda decorativa — arcos/escamas dorados, radial-gradient */}
-      <div
-        aria-hidden="true"
-        style={{
-          marginTop: 20,
-          marginLeft: -20,
-          marginRight: -20,
-          height: 44,
-          borderTop: '2px solid #f2c14e',
-          borderBottom: '2px solid #f2c14e',
-          '--s': '22px',
-          '--c1': '#f2c14e',
-          '--c2': '#1d5e8c',
-          '--_g': '#0000 83%,var(--c1) 85% 99%,#0000 101%',
-          background: [
-            'radial-gradient(27% 29% at right,var(--_g)) calc(var(--s)/ 2) var(--s)',
-            'radial-gradient(27% 29% at left ,var(--_g)) calc(var(--s)/-2) var(--s)',
-            'radial-gradient(29% 27% at top  ,var(--_g)) 0 calc(var(--s)/2)',
-            'radial-gradient(29% 27% at bottom,var(--_g)) 0 calc(var(--s)/-2) var(--c2)',
-          ].join(','),
-          backgroundSize: 'calc(2*var(--s)) calc(2*var(--s))',
-        }}
-      />
+      {/* Banda decorativa azulejo — diamantes + líneas + puntos */}
+      <div aria-hidden="true" style={{ marginTop: 20, marginLeft: -20, marginRight: -20, lineHeight: 0 }}>
+        <svg width="100%" height="44" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+          <defs>
+            <pattern id="tile" x="0" y="0" width="44" height="40" patternUnits="userSpaceOnUse">
+              {/* Fondo azul */}
+              <rect width="44" height="40" fill="#1d5e8c"/>
+              {/* Líneas horizontales conectando diamantes */}
+              <line x1="0"  y1="20" x2="9"  y2="20" stroke="#f2c14e" strokeWidth="1.4"/>
+              <line x1="35" y1="20" x2="44" y2="20" stroke="#f2c14e" strokeWidth="1.4"/>
+              {/* Diamante exterior */}
+              <path d="M22,4 L36,20 L22,36 L8,20 Z" fill="#1d5e8c" stroke="#f2c14e" strokeWidth="1.6"/>
+              {/* Diamante interior */}
+              <path d="M22,11 L30,20 L22,29 L14,20 Z" fill="#f2c14e" opacity="0.18" stroke="#f2c14e" strokeWidth="1"/>
+              {/* Punto central */}
+              <circle cx="22" cy="20" r="3" fill="#f2c14e"/>
+              {/* Puntos en los vértices del diamante */}
+              <circle cx="22" cy="4"  r="2" fill="#f2c14e"/>
+              <circle cx="36" cy="20" r="2" fill="#f2c14e"/>
+              <circle cx="22" cy="36" r="2" fill="#f2c14e"/>
+              <circle cx="8"  cy="20" r="2" fill="#f2c14e"/>
+            </pattern>
+          </defs>
+          {/* Línea dorada superior */}
+          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke="#f2c14e" strokeWidth="2.5"/>
+          {/* Relleno del patrón */}
+          <rect x="0" y="4" width="100%" height="36" fill="url(#tile)"/>
+          {/* Línea dorada inferior */}
+          <line x1="0" y1="42.5" x2="100%" y2="42.5" stroke="#f2c14e" strokeWidth="2.5"/>
+        </svg>
+      </div>
     </header>
   )
 }
