@@ -133,7 +133,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
             ) : (
               <motion.div
                 key="qty-control"
-                className="flex items-center gap-1 rounded-xl px-1.5 py-1"
+                className="flex items-center gap-1 rounded-2xl px-1.5 py-1"
                 style={{ background: '#eaf3f8' }}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -142,7 +142,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
               >
                 <button
                   onClick={handleDecrement}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white active:opacity-70"
                   style={{ background: '#1d5e8c' }}
                   aria-label="Quitar uno"
                 >
@@ -159,7 +159,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
                 </motion.span>
                 <button
                   onClick={handleAdd}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white active:opacity-70"
                   style={{ background: '#1d5e8c' }}
                   aria-label="Agregar uno más"
                 >

@@ -131,7 +131,7 @@ export default function MenuPage() {
                   return (
                     <div
                       key={s.num}
-                      className="flex flex-col items-center text-center gap-1.5 py-3 px-1 rounded-xl"
+                      className="flex flex-col items-center text-center gap-1.5 py-3 px-1 rounded-2xl"
                       style={{
                         background: '#fff',
                         border: '1px solid #e3edf2',

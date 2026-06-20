@@ -38,7 +38,7 @@ export default function ModifierModal({ item, onClose }) {
       <motion.div
         className="w-full bg-white overflow-hidden"
         style={{
-          borderRadius: '22px 22px 0 0',
+          borderRadius: '24px 24px 0 0',
           boxShadow: '0 -8px 40px rgba(29,94,140,0.18)',
           maxHeight: '90dvh',
           overflowY: 'auto',
@@ -159,7 +159,7 @@ export default function ModifierModal({ item, onClose }) {
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}
-            className="flex-1 py-4 rounded-xl text-white font-bold text-sm transition-opacity active:opacity-75"
+            className="flex-1 py-4 rounded-2xl text-white font-bold text-sm transition-opacity active:opacity-75"
             style={{
               background: '#1d5e8c',
               opacity: canConfirm ? 1 : 0.4,

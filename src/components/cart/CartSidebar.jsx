@@ -82,7 +82,7 @@ function DrinkCard({ drink, index }) {
           <motion.button
             key="add"
             onClick={add}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
             style={{ background: '#1d5e8c' }}
             aria-label={`Agregar ${drink.name}`}
             initial={{ scale: 0.8, opacity: 0 }}
@@ -96,7 +96,7 @@ function DrinkCard({ drink, index }) {
         ) : (
           <motion.div
             key="stepper"
-            className="flex items-center gap-1 rounded-xl px-1.5 py-1 flex-shrink-0"
+            className="flex items-center gap-1 rounded-2xl px-1.5 py-1 flex-shrink-0"
             style={{ background: '#eaf3f8' }}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -105,7 +105,7 @@ function DrinkCard({ drink, index }) {
           >
             <button
               onClick={() => decrement(`${drink.id}|`)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-white active:opacity-70"
               style={{ background: '#1d5e8c' }}
               aria-label="Quitar uno"
             >
@@ -122,7 +122,7 @@ function DrinkCard({ drink, index }) {
             </motion.span>
             <button
               onClick={add}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white active:opacity-70"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-white active:opacity-70"
               style={{ background: '#1d5e8c' }}
               aria-label="Agregar uno más"
             >
@@ -281,10 +281,10 @@ export default function CartSidebar({ isOpen, onClose }) {
         className={[
           // Mobile: bottom sheet fijo
           'fixed bottom-0 left-0 right-0 z-40',
-          'rounded-t-[22px]',
+          'rounded-t-3xl',
           // Desktop: sidebar estático
           'md:static md:bottom-auto md:left-auto md:right-auto',
-          'md:rounded-[18px]',
+          'md:rounded-2xl',
           'md:w-[320px] md:flex-shrink-0 md:self-start md:sticky md:top-6',
           // Común
           'bg-white flex flex-col',
@@ -358,7 +358,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => decrement(item.key)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white"
                             style={{ background: '#1d5e8c' }}
                             aria-label="Quitar uno"
                           >
@@ -369,7 +369,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                           </span>
                           <button
                             onClick={() => addItem({ menuItemId: item.menuItemId, itemName: item.itemName, basePrice: item.basePrice, selectedModifier: item.selectedModifier })}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white"
                             style={{ background: '#1d5e8c' }}
                             aria-label="Agregar uno más"
                           >
@@ -394,7 +394,7 @@ export default function CartSidebar({ isOpen, onClose }) {
 
                 <button
                   onClick={() => setStep(!cartHasDrink && drinkItems.length > 0 ? 'drinks' : 'checkout')}
-                  className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75"
+                  className="w-full py-4 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75"
                   style={{ background: '#1d5e8c' }}
                 >
                   Ir al pedido →
@@ -427,7 +427,7 @@ export default function CartSidebar({ isOpen, onClose }) {
 
             <button
               onClick={() => setStep('checkout')}
-              className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 mt-auto"
+              className="w-full py-4 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 mt-auto"
               style={{ background: '#1d5e8c' }}
             >
               {cartHasDrink ? 'Continuar al pedido →' : 'Seguir sin bebida →'}
@@ -483,7 +483,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => setShowMap(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white active:opacity-80"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold text-white active:opacity-80"
                     style={{ background: '#1d5e8c' }}
                   >
                     <MapPin size={15} />
@@ -551,7 +551,7 @@ export default function CartSidebar({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 disabled:opacity-60"
+              className="w-full py-4 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-75 disabled:opacity-60"
               style={{ background: '#1d5e8c' }}
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
