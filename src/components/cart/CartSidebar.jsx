@@ -409,7 +409,10 @@ export default function CartSidebar({ isOpen, onClose }) {
           <div className="flex flex-col flex-1 p-5 gap-4">
             <div>
               <h3 className="font-display font-bold text-[18px] leading-tight" style={{ color: '#1d5e8c' }}>
-                ¿Querés agregar una bebida? 🥤
+                <span className="inline-flex items-center gap-2">
+                  ¿Querés agregar una bebida?
+                  <CupSoda size={20} strokeWidth={2} color="#1d5e8c" />
+                </span>
               </h3>
               <p className="text-sm mt-0.5" style={{ color: '#7c8a93' }}>
                 Sumá algo para tomar a tu pedido.

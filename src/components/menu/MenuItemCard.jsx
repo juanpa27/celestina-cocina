@@ -111,23 +111,23 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
               <motion.div
                 key="add-btn"
                 className="flex items-center rounded-full overflow-hidden"
-                style={{ border: '1.5px solid #1d5e8c' }}
+                style={{ background: '#1d5e8c' }}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               >
-                <span className="pl-3.5 pr-2 text-sm font-semibold select-none" style={{ color: '#1d5e8c' }}>
+                <span className="pl-4 pr-2.5 text-sm font-semibold select-none text-white">
                   Pedir
                 </span>
                 <motion.button
                   onClick={handleAdd}
-                  className="w-8 h-8 m-0.5 rounded-full flex items-center justify-center text-white"
-                  style={{ background: '#1d5e8c' }}
+                  className="w-8 h-8 m-0.5 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.18)' }}
                   aria-label={`Agregar ${item.name}`}
                   whileTap={{ scale: 0.82 }}
                 >
-                  <Plus size={15} strokeWidth={3} />
+                  <Plus size={15} strokeWidth={3} color="white" />
                 </motion.button>
               </motion.div>
             ) : (
