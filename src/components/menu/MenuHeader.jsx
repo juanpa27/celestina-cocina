@@ -55,16 +55,15 @@ export default function MenuHeader() {
           marginLeft: -20,
           marginRight: -20,
           height: 80,
-          borderTop: '2.5px solid #f2c14e',
           '--s': '40px',
           '--c1': '#f2c14e',
           '--c2': '#1d5e8c',
           '--_g': '#0000 83%,var(--c1) 85% 99%,#0000 101%',
           background:
-            'radial-gradient(27% 29% at right ,var(--_g)) calc(var(--s)/ 2) var(--s),' +
-            'radial-gradient(27% 29% at left  ,var(--_g)) calc(var(--s)/-2) var(--s),' +
-            'radial-gradient(29% 27% at top   ,var(--_g)) 0 calc(var(--s)/ 2),' +
-            'radial-gradient(29% 27% at bottom,var(--_g)) 0 calc(var(--s)/-2) ' +
+            'radial-gradient(27% 29% at right ,var(--_g)) calc(var(--s)/ 2) calc(var(--s)*1.5),' +
+            'radial-gradient(27% 29% at left  ,var(--_g)) calc(var(--s)/-2) calc(var(--s)*1.5),' +
+            'radial-gradient(29% 27% at top   ,var(--_g)) 0 var(--s),' +
+            'radial-gradient(29% 27% at bottom,var(--_g)) 0 0 ' +
             'var(--c2)',
           backgroundSize: 'calc(2*var(--s)) calc(2*var(--s))',
         }}
