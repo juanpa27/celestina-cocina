@@ -48,37 +48,17 @@ export default function MenuHeader() {
         {BUSINESS_SUBTITLE}
       </motion.p>
 
-      {/* Banda decorativa azulejo — diamantes + líneas + puntos */}
-      <div aria-hidden="true" style={{ marginTop: 20, marginLeft: -20, marginRight: -20, lineHeight: 0 }}>
-        <svg width="100%" height="44" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-          <defs>
-            <pattern id="tile" x="0" y="0" width="44" height="40" patternUnits="userSpaceOnUse">
-              {/* Fondo azul */}
-              <rect width="44" height="40" fill="#1d5e8c"/>
-              {/* Líneas horizontales conectando diamantes */}
-              <line x1="0"  y1="20" x2="9"  y2="20" stroke="#f2c14e" strokeWidth="1.4"/>
-              <line x1="35" y1="20" x2="44" y2="20" stroke="#f2c14e" strokeWidth="1.4"/>
-              {/* Diamante exterior */}
-              <path d="M22,4 L36,20 L22,36 L8,20 Z" fill="#1d5e8c" stroke="#f2c14e" strokeWidth="1.6"/>
-              {/* Diamante interior */}
-              <path d="M22,11 L30,20 L22,29 L14,20 Z" fill="#f2c14e" opacity="0.18" stroke="#f2c14e" strokeWidth="1"/>
-              {/* Punto central */}
-              <circle cx="22" cy="20" r="3" fill="#f2c14e"/>
-              {/* Puntos en los vértices del diamante */}
-              <circle cx="22" cy="4"  r="2" fill="#f2c14e"/>
-              <circle cx="36" cy="20" r="2" fill="#f2c14e"/>
-              <circle cx="22" cy="36" r="2" fill="#f2c14e"/>
-              <circle cx="8"  cy="20" r="2" fill="#f2c14e"/>
-            </pattern>
-          </defs>
-          {/* Línea dorada superior */}
-          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke="#f2c14e" strokeWidth="2.5"/>
-          {/* Relleno del patrón */}
-          <rect x="0" y="4" width="100%" height="36" fill="url(#tile)"/>
-          {/* Línea dorada inferior */}
-          <line x1="0" y1="42.5" x2="100%" y2="42.5" stroke="#f2c14e" strokeWidth="2.5"/>
-        </svg>
-      </div>
+      {/* Banda azulejo — mismo patrón que el footer */}
+      <div
+        aria-hidden="true"
+        style={{
+          marginTop: 20,
+          marginLeft: -20,
+          marginRight: -20,
+          height: 14,
+          background: 'repeating-linear-gradient(90deg, #1d5e8c 0 28px, #f2c14e 28px 32px, #5b96bf 32px 60px, #f2c14e 60px 64px)',
+        }}
+      />
     </header>
   )
 }
