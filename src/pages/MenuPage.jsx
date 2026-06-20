@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useMenu } from '../hooks/useMenu'
 import { useIsOpen } from '../hooks/useIsOpen'
 import MenuHeader from '../components/menu/MenuHeader'
@@ -27,34 +27,27 @@ export default function MenuPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [modifierItem, setModifierItem] = useState(null)
   const [howToOpen, setHowToOpen] = useState(false)
-  const observerRef = useRef(null)
-  const visibleSet = useRef(new Set())
 
-  // Scroll spy: detecta qué sección está visible y actualiza el tab activo
+  // Scroll spy: la sección activa es la última cuyo top cruzó el tab bar.
+  // Iterar en orden y quedarse con la última que pasó el umbral garantiza
+  // que secciones cortas al final (ej. Bebidas) activen correctamente.
   useEffect(() => {
     if (!categories?.length) return
-    observerRef.current?.disconnect()
-    visibleSet.current.clear()
 
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          const id = entry.target.id.replace('cat-', '')
-          if (entry.isIntersecting) visibleSet.current.add(id)
-          else visibleSet.current.delete(id)
-        })
-        const first = categories.find(c => visibleSet.current.has(c.id))
-        setActiveCategory(first?.id ?? null)
-      },
-      { rootMargin: `-${TABS_HEIGHT + 10}px 0px -80px 0px`, threshold: 0 }
-    )
+    function updateActive() {
+      const threshold = TABS_HEIGHT + 16
+      let activeId = null
+      for (const cat of categories) {
+        const el = document.getElementById(`cat-${cat.id}`)
+        if (!el) continue
+        if (el.getBoundingClientRect().top <= threshold) activeId = cat.id
+      }
+      setActiveCategory(activeId)
+    }
 
-    categories.forEach(cat => {
-      const el = document.getElementById(`cat-${cat.id}`)
-      if (el) observerRef.current.observe(el)
-    })
-
-    return () => observerRef.current?.disconnect()
+    window.addEventListener('scroll', updateActive, { passive: true })
+    updateActive()
+    return () => window.removeEventListener('scroll', updateActive)
   }, [categories])
 
   // Click en tab: scroll suave a la sección con offset del sticky bar
