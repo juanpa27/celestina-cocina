@@ -10,7 +10,7 @@ import CartSidebar from '../components/cart/CartSidebar'
 import CartFloating from '../components/cart/CartFloating'
 import AzulejoStrip from '../components/ui/AzulejoStrip'
 import ClosedBanner from '../components/ui/ClosedBanner'
-import { HelpCircle, ShoppingBag, MessageCircle, Search } from 'lucide-react'
+import { Truck, ShoppingBag, MessageCircle, Search } from 'lucide-react'
 
 const HOW_TO_STEPS = [
   { num: '1', Icon: Search,       label: 'Elegí tus platos',        color: '#1d5e8c' },
@@ -122,45 +122,36 @@ export default function MenuPage() {
             </div>
           )}
 
-          {/* Mini guía cómo pedir */}
+          {/* Mini guía cómo pedir — 3 columnas iguales, caben en cualquier mobile */}
           {!isLoading && !error && (
             <div className="pt-4 pb-1">
-              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollSnapType: 'x mandatory' }}>
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 {HOW_TO_STEPS.map((s) => {
                   const Icon = s.Icon
                   return (
                     <div
                       key={s.num}
-                      className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+                      className="flex flex-col items-center text-center gap-1.5 py-3 px-1 rounded-xl"
                       style={{
                         background: '#fff',
                         border: '1px solid #e3edf2',
-                        scrollSnapAlign: 'start',
-                        minWidth: 152,
                         boxShadow: '0 1px 4px rgba(29,94,140,0.06)',
                       }}
                     >
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                         style={{ background: s.color }}
                       >
                         {s.num}
                       </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[11px] font-bold" style={{ color: '#1c2b36' }}>{s.label}</span>
-                      </div>
+                      <Icon size={16} color={s.color} strokeWidth={2} />
+                      <span className="text-[11px] font-semibold leading-tight" style={{ color: '#1c2b36' }}>
+                        {s.label}
+                      </span>
                     </div>
                   )
                 })}
               </div>
-              <button
-                onClick={() => setHowToOpen(true)}
-                className="mt-2 flex items-center gap-1 text-xs"
-                style={{ color: '#5b96bf' }}
-              >
-                <HelpCircle size={13} />
-                <span>¿Cómo funciona? Ver guía</span>
-              </button>
             </div>
           )}
 
@@ -236,15 +227,14 @@ export default function MenuPage() {
       {/* Floating cart — solo mobile, oculto si el negocio está cerrado */}
       {isOpen && <CartFloating onOpen={() => setCartOpen(true)} />}
 
-      {/* Botón flotante ¿Cómo pedir? — mobile, esquina inferior izquierda */}
+      {/* Botón flotante ¿Cómo pedir? — mobile, esquina inferior izquierda, solo ícono */}
       <button
         onClick={() => setHowToOpen(true)}
-        className="fixed z-30 md:hidden flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-white text-xs font-bold shadow-lg"
+        className="fixed z-30 md:hidden w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg"
         style={{ bottom: 20, left: 16, background: '#1d5e8c', boxShadow: '0 4px 16px rgba(29,94,140,0.35)' }}
         aria-label="¿Cómo pedir?"
       >
-        <HelpCircle size={14} strokeWidth={2.5} />
-        <span>¿Cómo pedir?</span>
+        <Truck size={20} strokeWidth={2} />
       </button>
 
       {/* Modal de modificadores */}
