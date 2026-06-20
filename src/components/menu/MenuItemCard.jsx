@@ -108,28 +108,28 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
 
           <AnimatePresence mode="wait" initial={false}>
             {!isOpen ? null : hasModifiers || qty === 0 ? (
-              <motion.div
+              <motion.button
                 key="add-btn"
-                className="flex items-center rounded-full overflow-hidden"
+                onClick={handleAdd}
+                className="flex items-center rounded-2xl overflow-hidden"
                 style={{ background: '#1d5e8c' }}
+                aria-label={`Agregar ${item.name}`}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                whileTap={{ scale: 0.92 }}
               >
-                <span className="pl-4 pr-2.5 text-sm font-semibold select-none text-white">
+                <span className="pl-4 pr-2.5 text-sm font-semibold text-white select-none">
                   Pedir
                 </span>
-                <motion.button
-                  onClick={handleAdd}
-                  className="w-8 h-8 m-0.5 rounded-full flex items-center justify-center"
+                <span
+                  className="w-8 h-8 m-0.5 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(255,255,255,0.18)' }}
-                  aria-label={`Agregar ${item.name}`}
-                  whileTap={{ scale: 0.82 }}
                 >
                   <Plus size={15} strokeWidth={3} color="white" />
-                </motion.button>
-              </motion.div>
+                </span>
+              </motion.button>
             ) : (
               <motion.div
                 key="qty-control"
