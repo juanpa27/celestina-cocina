@@ -120,14 +120,14 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 whileTap={{ scale: 0.92 }}
               >
-                <span className="pl-4 pr-2.5 text-sm font-semibold text-white select-none">
+                <span className="pl-5 pr-3 text-[15px] font-bold text-white select-none">
                   Pedir
                 </span>
                 <span
-                  className="w-8 h-8 m-0.5 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.18)' }}
+                  className="w-9 h-9 m-1 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.2)' }}
                 >
-                  <Plus size={15} strokeWidth={3} color="white" />
+                  <Plus size={17} strokeWidth={3} color="white" />
                 </span>
               </motion.button>
             ) : (
