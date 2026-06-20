@@ -47,62 +47,26 @@ export default function MenuHeader() {
         {BUSINESS_SUBTITLE}
       </motion.p>
 
-      {/* Banda decorativa azulejo — arcos finos + palmeta + gota colgante */}
-      <div aria-hidden="true" style={{ marginTop: 20, lineHeight: 0 }}>
-        <svg
-          width="100%"
-          height="62"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ display: 'block' }}
-        >
-          <defs>
-            <pattern
-              id="azulejo-band"
-              x="0" y="0"
-              width="38" height="56"
-              patternUnits="userSpaceOnUse"
-            >
-              {/* Fondo azul liso */}
-              <rect width="38" height="56" fill="#1d5e8c"/>
-
-              {/* Arco fino superior (vértice arriba, cúspides en los bordes) */}
-              <path
-                d="M0,10 C6,8 14,3 19,2 C24,3 32,8 38,10"
-                fill="none" stroke="#d6ab2f" strokeWidth="1.2"
-              />
-              {/* Puntos en las uniones de los arcos y en el vértice */}
-              <circle cx="0" cy="10" r="1.6" fill="#d6ab2f"/>
-              <circle cx="38" cy="10" r="1.6" fill="#d6ab2f"/>
-              <circle cx="19" cy="1.4" r="1" fill="#d6ab2f"/>
-
-              {/* Palmeta — abanico de pétalos radiados */}
-              <g transform="translate(19,27)" fill="#d6ab2f">
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-48)"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-32)"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(-16)"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(16)"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(32)"/>
-                <path d="M0,0 C1.3,-5 1.3,-11 0,-15 C-1.3,-11 -1.3,-5 0,0 Z" transform="rotate(48)"/>
-              </g>
-
-              {/* Base y gota colgante sólida */}
-              <circle cx="19" cy="29" r="1.6" fill="#d6ab2f"/>
-              <path
-                d="M19,30 C14.8,38 14.8,46 19,47.5 C23.2,46 23.2,38 19,30 Z"
-                fill="#d6ab2f"
-              />
-            </pattern>
-          </defs>
-
-          {/* Línea dorada superior */}
-          <line x1="0" y1="2.5" x2="100%" y2="2.5" stroke="#d6ab2f" strokeWidth="2.5"/>
-          {/* Relleno del patrón */}
-          <rect x="0" y="4" width="100%" height="56" fill="url(#azulejo-band)"/>
-          {/* Línea dorada inferior */}
-          <line x1="0" y1="61" x2="100%" y2="61" stroke="#d6ab2f" strokeWidth="2.5"/>
-        </svg>
-      </div>
+      {/* Banda decorativa azulejo — patrón de escamas/ojivas (radial-gradient) */}
+      <div
+        aria-hidden="true"
+        style={{
+          marginTop: 20,
+          height: 80,
+          borderTop: '2.5px solid #f2c14e',
+          '--s': '40px',
+          '--c1': '#f2c14e',
+          '--c2': '#1d5e8c',
+          '--_g': '#0000 83%,var(--c1) 85% 99%,#0000 101%',
+          background:
+            'radial-gradient(27% 29% at right ,var(--_g)) calc(var(--s)/ 2) var(--s),' +
+            'radial-gradient(27% 29% at left  ,var(--_g)) calc(var(--s)/-2) var(--s),' +
+            'radial-gradient(29% 27% at top   ,var(--_g)) 0 calc(var(--s)/ 2),' +
+            'radial-gradient(29% 27% at bottom,var(--_g)) 0 calc(var(--s)/-2)' +
+            'var(--c2)',
+          backgroundSize: 'calc(2*var(--s)) calc(2*var(--s))',
+        }}
+      />
     </header>
   )
 }
