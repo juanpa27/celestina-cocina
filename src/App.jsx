@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import MenuPage from './pages/MenuPage'
@@ -6,6 +7,9 @@ import DashboardPage from './pages/admin/DashboardPage'
 import OrdersPage from './pages/admin/OrdersPage'
 import MenuAdminPage from './pages/admin/MenuAdminPage'
 import ConfigPage from './pages/admin/ConfigPage'
+
+// Carga diferida: arrastra html-to-image, que no debe pesar en el bundle del menú público.
+const FlyersPage = lazy(() => import('./pages/admin/FlyersPage'))
 
 export default function App() {
   return (
@@ -32,6 +36,7 @@ export default function App() {
           <Route path="dashboard"     element={<DashboardPage />} />
           <Route path="pedidos"       element={<OrdersPage />} />
           <Route path="menu"          element={<MenuAdminPage />} />
+          <Route path="flyers"        element={<Suspense fallback={null}><FlyersPage /></Suspense>} />
           <Route path="configuracion" element={<ConfigPage />} />
         </Route>
       </Routes>
