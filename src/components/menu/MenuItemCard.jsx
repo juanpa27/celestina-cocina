@@ -76,7 +76,7 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
         {/* Badge descuento — top-left */}
         {hasDiscount && (
           <span
-            className="absolute top-2 left-2 text-[12px] font-bold px-2.5 py-1 rounded-full text-white leading-none"
+            className="absolute top-2 left-2 text-[13px] sm:text-[12px] font-bold px-3 sm:px-2.5 py-1 rounded-full text-white leading-none"
             style={{ background: '#1d5e8c' }}
           >
             {item.discount_pct}% OFF
@@ -86,10 +86,10 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
         {/* Badge más pedido — bottom-left */}
         {item.is_popular && (
           <span
-            className="absolute bottom-2 left-2 flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full leading-none"
+            className="absolute bottom-2 left-2 flex items-center gap-1 text-[12px] sm:text-[11px] font-bold px-2.5 sm:px-2 py-1 rounded-full leading-none"
             style={{ background: '#f2c14e', color: '#1c2b36' }}
           >
-            <Flame size={11} strokeWidth={2.5} />
+            <Flame size={12} strokeWidth={2.5} />
             Más pedido
           </span>
         )}
