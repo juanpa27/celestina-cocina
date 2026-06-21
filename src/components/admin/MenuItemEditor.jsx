@@ -6,13 +6,16 @@ import { X, Upload, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
+import { formatPrice, calcDiscountedPrice } from '../../lib/utils'
 
 const schema = z.object({
-  name:        z.string().min(2, 'Requerido'),
-  description: z.string().optional(),
-  price:       z.coerce.number().min(1, 'Requerido'),
-  notes:       z.string().optional(),
-  available:   z.boolean(),
+  name:         z.string().min(2, 'Requerido'),
+  description:  z.string().optional(),
+  price:        z.coerce.number().min(1, 'Requerido'),
+  notes:        z.string().optional(),
+  available:    z.boolean(),
+  is_popular:   z.boolean(),
+  discount_pct: z.coerce.number().min(0).max(100),
 })
 
 // Sirve para EDITAR (recibe `item`) o CREAR (recibe `categoryId` + `sortOrder`).
@@ -27,16 +30,23 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
   const [imageUrl, setImageUrl] = useState(item?.image_url ?? null)
   const fileRef = useRef()
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, watch } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:        item?.name ?? '',
-      description: item?.description ?? '',
-      price:       item?.price ?? '',
-      notes:       item?.notes ?? '',
-      available:   item?.available ?? true,
+      name:         item?.name ?? '',
+      description:  item?.description ?? '',
+      price:        item?.price ?? '',
+      notes:        item?.notes ?? '',
+      available:    item?.available ?? true,
+      is_popular:   item?.is_popular ?? false,
+      discount_pct: item?.discount_pct ?? 0,
     },
   })
+
+  const watchedPrice = watch('price')
+  const watchedDiscount = watch('discount_pct')
+  const showPreview = watchedDiscount > 0 && watchedPrice > 0
+  const previewEffective = showPreview ? calcDiscountedPrice(Number(watchedPrice), Number(watchedDiscount)) : null
 
   // Cerrar con Escape
   useEffect(() => {
@@ -78,11 +88,13 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
 
   async function onSubmit(data) {
     const payload = {
-      name:        data.name,
-      description: data.description || null,
-      price:       data.price,
-      notes:       data.notes || null,
-      available:   data.available,
+      name:         data.name,
+      description:  data.description || null,
+      price:        data.price,
+      notes:        data.notes || null,
+      available:    data.available,
+      is_popular:   data.is_popular,
+      discount_pct: data.discount_pct,
     }
 
     let error
@@ -153,6 +165,15 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
               <input type="checkbox" {...register('available')} className="w-5 h-5 rounded accent-celestina-azul" />
             </label>
 
+            {/* Más pedido */}
+            <label className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-bold" style={{ color: '#1c2b36' }}>Más pedido</span>
+                <p className="text-xs mt-0.5" style={{ color: '#7c8a93' }}>Muestra borde dorado y badge en la card</p>
+              </div>
+              <input type="checkbox" {...register('is_popular')} className="w-5 h-5 rounded accent-celestina-azul" />
+            </label>
+
             {/* Nombre */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Nombre</label>
@@ -168,9 +189,30 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
 
             {/* Precio */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Precio (Gs)</label>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Precio base (Gs)</label>
               <input {...register('price')} type="number" step="1000" placeholder="10000" className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: errors.price ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }} />
               {errors.price && <p className="text-xs text-red-500 mt-0.5">{errors.price.message}</p>}
+            </div>
+
+            {/* Descuento */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Descuento (%)</label>
+              <input
+                {...register('discount_pct')}
+                type="number"
+                min="0"
+                max="100"
+                step="5"
+                placeholder="0"
+                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none"
+                style={{ borderColor: errors.discount_pct ? '#ef4444' : '#e5e7eb', fontFamily: 'inherit' }}
+              />
+              {errors.discount_pct && <p className="text-xs text-red-500 mt-0.5">{errors.discount_pct.message}</p>}
+              {showPreview && (
+                <p className="text-xs mt-1.5 font-semibold" style={{ color: '#1d5e8c' }}>
+                  Precio con descuento: <strong>{formatPrice(previewEffective)}</strong>
+                </p>
+              )}
             </div>
 
             {/* Notas */}

@@ -30,7 +30,10 @@ create table menu_items (
   price numeric(12,0) not null,
   image_url text,
   notes text,
+  subcategory text,
   available boolean not null default true,
+  is_popular boolean default false,
+  discount_pct smallint default 0 check (discount_pct is null or (discount_pct >= 0 and discount_pct <= 100)),
   sort_order int not null default 0,
   created_at timestamptz default now()
 );

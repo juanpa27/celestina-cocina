@@ -2,6 +2,12 @@ export function formatPrice(amount) {
   return `Gs ${Number(amount).toLocaleString('es-PY')}`
 }
 
+export function calcDiscountedPrice(price, discountPct) {
+  if (!discountPct) return price
+  const raw = price * (1 - discountPct / 100)
+  return Math.round(raw / 500) * 500
+}
+
 export function vibrateFeedback(ms = 40) {
   navigator.vibrate?.(ms)
 }

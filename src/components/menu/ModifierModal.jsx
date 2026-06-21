@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
-import { formatPrice, vibrateFeedback } from '../../lib/utils'
+import { formatPrice, vibrateFeedback, calcDiscountedPrice } from '../../lib/utils'
 
 export default function ModifierModal({ item, onClose }) {
   const addItem = useCartStore(s => s.addItem)
@@ -10,14 +10,15 @@ export default function ModifierModal({ item, onClose }) {
   const [selected, setSelected] = useState(null)
 
   const canConfirm = !group?.required || selected !== null
-  const totalPrice = item.price + (selected?.extra_price ?? 0)
+  const effectivePrice = calcDiscountedPrice(item.price, item.discount_pct)
+  const totalPrice = effectivePrice + (selected?.extra_price ?? 0)
 
   function handleConfirm() {
     vibrateFeedback()
     addItem({
       menuItemId: item.id,
       itemName: item.name,
-      basePrice: item.price,
+      basePrice: effectivePrice,
       selectedModifier: selected
         ? { name: selected.name, extraPrice: selected.extra_price }
         : null,

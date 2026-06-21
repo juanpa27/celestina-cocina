@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus } from 'lucide-react'
+import { Plus, Minus, Flame } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
-import { formatPrice, vibrateFeedback } from '../../lib/utils'
+import { formatPrice, vibrateFeedback, calcDiscountedPrice } from '../../lib/utils'
 
 export default function MenuItemCard({ item, categoryName, onAddWithModifiers, isOpen = true }) {
   const addItem = useCartStore(s => s.addItem)
@@ -15,13 +15,18 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
   const isDrink = categoryName === 'Bebidas'
   const hasModifiers = item.modifierGroups?.length > 0
   const qty = hasModifiers ? 0 : getQuantity(item.id, undefined)
+  const effectivePrice = calcDiscountedPrice(item.price, item.discount_pct)
+  const hasDiscount = item.discount_pct > 0
+
+  const popularShadow = '0 2px 14px rgba(242,193,78,0.25), 0 2px 10px rgba(29,94,140,0.04)'
+  const defaultShadow = '0 2px 10px rgba(29,94,140,0.04)'
 
   function handleAdd() {
     vibrateFeedback()
     if (hasModifiers) {
       onAddWithModifiers(item)
     } else {
-      addItem({ menuItemId: item.id, itemName: item.name, basePrice: item.price, selectedModifier: null })
+      addItem({ menuItemId: item.id, itemName: item.name, basePrice: effectivePrice, selectedModifier: null })
       setFlash(true)
       setTimeout(() => setFlash(false), 450)
     }
@@ -35,11 +40,11 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
     <motion.div
       className="bg-white rounded-2xl overflow-hidden flex flex-col"
       animate={flash
-        ? { boxShadow: ['0 2px 10px rgba(29,94,140,0.04)', '0 0 0 3px rgba(34,197,94,0.45)', '0 2px 10px rgba(29,94,140,0.04)'] }
-        : { boxShadow: '0 2px 10px rgba(29,94,140,0.04)' }
+        ? { boxShadow: [item.is_popular ? popularShadow : defaultShadow, '0 0 0 3px rgba(34,197,94,0.45)', item.is_popular ? popularShadow : defaultShadow] }
+        : { boxShadow: item.is_popular ? popularShadow : defaultShadow }
       }
       transition={{ duration: 0.45 }}
-      style={{ border: '1px solid #e3edf2' }}
+      style={{ border: item.is_popular ? '2px solid #f2c14e' : '1px solid #e3edf2' }}
     >
       {/* Imagen */}
       <div
@@ -66,6 +71,27 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
               <path d="M25 14c0 0 2 2 2 6s-2 6-2 6v2h2V14h-2z" fill="#1d5e8c"/>
             </svg>
           </div>
+        )}
+
+        {/* Badge descuento — top-left */}
+        {hasDiscount && (
+          <span
+            className="absolute top-2 left-2 text-[12px] font-bold px-2.5 py-1 rounded-full text-white leading-none"
+            style={{ background: '#1d5e8c' }}
+          >
+            {item.discount_pct}% OFF
+          </span>
+        )}
+
+        {/* Badge más pedido — bottom-left */}
+        {item.is_popular && (
+          <span
+            className="absolute bottom-2 left-2 flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full leading-none"
+            style={{ background: '#f2c14e', color: '#1c2b36' }}
+          >
+            <Flame size={11} strokeWidth={2.5} />
+            Más pedido
+          </span>
         )}
       </div>
 
@@ -101,8 +127,13 @@ export default function MenuItemCard({ item, categoryName, onAddWithModifiers, i
                 Elegí tu variante
               </span>
             )}
+            {hasDiscount && (
+              <span className="text-[12px] line-through leading-none mb-0.5" style={{ color: '#7c8a93' }}>
+                {formatPrice(item.price)}
+              </span>
+            )}
             <span className="font-bold text-[16px] text-celestina-tinta">
-              {formatPrice(item.price)}
+              {formatPrice(effectivePrice)}
             </span>
           </div>
 

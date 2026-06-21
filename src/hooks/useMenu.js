@@ -7,7 +7,7 @@ async function fetchMenu({ adminMode = false } = {}) {
     .select(`
       id, name, sort_order, active,
       menu_items (
-        id, name, description, price, image_url, notes, available, sort_order,
+        id, name, description, price, image_url, notes, available, is_popular, discount_pct, sort_order,
         menu_item_modifier_groups (
           modifier_groups (
             id, name, selection_type, required, sort_order,
