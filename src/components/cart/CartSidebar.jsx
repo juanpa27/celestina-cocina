@@ -175,6 +175,11 @@ export default function CartSidebar({ isOpen, onClose }) {
       return
     }
 
+    // Abrir la ventana aquí, antes de los await, para conservar el user-gesture
+    // token del navegador. Después de cualquier await, el browser revoca el token
+    // y window.open es bloqueado o abierto por un fallback que corrompe emojis.
+    const waWindow = window.open('about:blank', '_blank')
+
     // Guard server-side: verificar estado manual + horario antes de insertar.
     const { data: configRows } = await supabase
       .from('app_config')
@@ -182,6 +187,7 @@ export default function CartSidebar({ isOpen, onClose }) {
       .in('key', ['is_open', 'schedule_open', 'schedule_close'])
     const cfg = Object.fromEntries((configRows ?? []).map(r => [r.key, r.value]))
     if (cfg.is_open === 'false' || !isWithinSchedule(cfg.schedule_open, cfg.schedule_close)) {
+      waWindow?.close()
       toast.error('El negocio está cerrado, no se pueden tomar pedidos ahora.')
       return
     }
@@ -248,7 +254,9 @@ export default function CartSidebar({ isOpen, onClose }) {
       const waNegocio = config?.whatsapp_negocio || '595986818441'
       const msgCelestina = buildWhatsAppMessage(order.order_number, items, totalPrice, customer)
 
-      window.open(`https://wa.me/${waNegocio}?text=${encodeURIComponent(msgCelestina)}`, '_blank')
+      const waUrl = `https://wa.me/${waNegocio}?text=${encodeURIComponent(msgCelestina)}`
+      if (waWindow) waWindow.location.href = waUrl
+      else window.location.href = waUrl
 
       clearCart()
       setPickedLat(null)
@@ -258,6 +266,7 @@ export default function CartSidebar({ isOpen, onClose }) {
       onClose?.()
       toast.success('¡Pedido enviado! Revisá WhatsApp.')
     } catch (err) {
+      waWindow?.close()
       console.error(err)
       toast.error('Hubo un error al enviar el pedido. Intentá de nuevo.')
     } finally {
