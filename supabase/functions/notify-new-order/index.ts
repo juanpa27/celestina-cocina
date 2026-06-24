@@ -40,9 +40,10 @@ Deno.serve(async (req) => {
     if (!rows?.length) return new Response(JSON.stringify({ sent: 0 }), { status: 200 })
 
     const total = Number(order.total ?? 0)
+    const totalFmt = total.toLocaleString('es-PY')
     const notification = JSON.stringify({
-      title:       '🛍 Nuevo pedido',
-      body:        `#${order.order_number} · ${order.customer_name} · Gs ${total.toLocaleString('es-PY')}`,
+      title:       `🛍 Pedido #${order.order_number}`,
+      body:        `${order.customer_name}\nGs ${totalFmt}`,
       url:         '/admin/pedidos',
       orderNumber: order.order_number,
     })
