@@ -1,19 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Save, Store, Lock, Clock, UtensilsCrossed, Truck } from 'lucide-react'
+import {
+  Loader2, Save, Store, Lock, Clock, UtensilsCrossed, Truck,
+  CreditCard, Upload, Download, Share2,
+} from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
 import { useIsOpen } from '../../hooks/useIsOpen'
 import { supabase } from '../../lib/supabase'
+import { exportFlyer, shareFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
+import PaymentBanner from '../../components/admin/flyers/PaymentBanner'
 
 const schema = z.object({
   whatsapp_negocio: z.string().min(6, 'Ingresá el número'),
   whatsapp_ajaka:   z.string().optional(),
   schedule_open:    z.string().optional(),
   schedule_close:   z.string().optional(),
+  payment_name:     z.string().optional(),
+  payment_alias:    z.string().optional(),
+  payment_bank:     z.string().optional(),
 })
 
 async function upsertConfig(key, value) {
@@ -28,6 +36,28 @@ export default function ConfigPage() {
   const { data: isOpen = true } = useIsOpen()
   const [togglingOpen, setTogglingOpen] = useState(false)
   const queryClient = useQueryClient()
+
+  // Logo del banco
+  const [logoUrl, setLogoUrl] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
+  const logoFileRef = useRef()
+
+  // Banner preview — escala dinámica
+  const bannerRef = useRef(null)
+  const bannerBoxRef = useRef(null)
+  const [bannerScale, setBannerScale] = useState(0.26)
+  const [sharing, setSharing] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  useLayoutEffect(() => {
+    const box = bannerBoxRef.current
+    if (!box) return
+    const update = () => setBannerScale(box.clientWidth / FLYER_W)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [])
 
   async function toggleOpen() {
     setTogglingOpen(true)
@@ -44,12 +74,19 @@ export default function ConfigPage() {
     setTogglingOpen(false)
   }
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { whatsapp_negocio: '', whatsapp_ajaka: '', schedule_open: '', schedule_close: '' },
+    defaultValues: {
+      whatsapp_negocio: '',
+      whatsapp_ajaka:   '',
+      schedule_open:    '',
+      schedule_close:   '',
+      payment_name:     '',
+      payment_alias:    '',
+      payment_bank:     '',
+    },
   })
 
-  // Cargar valores actuales cuando llegan de la DB
   useEffect(() => {
     if (config) {
       reset({
@@ -57,9 +94,17 @@ export default function ConfigPage() {
         whatsapp_ajaka:   config.whatsapp_ajaka   ?? '',
         schedule_open:    config.schedule_open    ?? '',
         schedule_close:   config.schedule_close   ?? '',
+        payment_name:     config.payment_name     ?? '',
+        payment_alias:    config.payment_alias    ?? '',
+        payment_bank:     config.payment_bank     ?? '',
       })
+      if (config.payment_bank_logo_url) setLogoUrl(config.payment_bank_logo_url)
     }
   }, [config, reset])
+
+  const watchPaymentName  = watch('payment_name')
+  const watchPaymentAlias = watch('payment_alias')
+  const watchPaymentBank  = watch('payment_bank')
 
   async function onSubmit(data) {
     try {
@@ -68,11 +113,64 @@ export default function ConfigPage() {
         upsertConfig('whatsapp_ajaka',   data.whatsapp_ajaka   ?? ''),
         upsertConfig('schedule_open',    data.schedule_open    ?? ''),
         upsertConfig('schedule_close',   data.schedule_close   ?? ''),
+        upsertConfig('payment_name',     data.payment_name     ?? ''),
+        upsertConfig('payment_alias',    data.payment_alias    ?? ''),
+        upsertConfig('payment_bank',     data.payment_bank     ?? ''),
       ])
       queryClient.invalidateQueries({ queryKey: ['config'] })
       toast.success('Configuración guardada')
     } catch {
       toast.error('No se pudo guardar.')
+    }
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `config/bank-logo.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('logos')
+        .upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(path)
+      await upsertConfig('payment_bank_logo_url', publicUrl)
+      setLogoUrl(publicUrl)
+      queryClient.invalidateQueries({ queryKey: ['config'] })
+      toast.success('Logo subido ✓')
+    } catch (err) {
+      console.error(err)
+      toast.error('No se pudo subir el logo.')
+    } finally {
+      setLogoUploading(false)
+      if (logoFileRef.current) logoFileRef.current.value = ''
+    }
+  }
+
+  async function handleShareBanner() {
+    if (!bannerRef.current) return
+    setSharing(true)
+    try {
+      await shareFlyer(bannerRef.current, { fileName: 'celestina-pago', title: 'Celestina Cocina — Formas de pago' })
+    } catch (e) {
+      if (e?.name !== 'AbortError') toast.error('No se pudo compartir.')
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function handleDownloadBanner() {
+    if (!bannerRef.current) return
+    setExporting(true)
+    try {
+      const bytes = await exportFlyer(bannerRef.current, { format: 'jpg', fileName: 'celestina-pago' })
+      toast.success(`Banner listo · ${(bytes / 1024).toFixed(0)} KB`)
+    } catch {
+      toast.error('No se pudo generar el banner.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -139,15 +237,12 @@ export default function ConfigPage() {
                 <p className="text-xs" style={{ color: '#9ca3af' }}>Recibe el detalle completo del pedido</p>
               </div>
             </div>
-
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
                 Número de WhatsApp
               </label>
               <div className="flex items-center border rounded-xl overflow-hidden" style={{ borderColor: errors.whatsapp_negocio ? '#ef4444' : '#e5e7eb' }}>
-                <span className="px-3 py-2.5 text-sm font-mono border-r" style={{ background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' }}>
-                  +
-                </span>
+                <span className="px-3 py-2.5 text-sm font-mono border-r" style={{ background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' }}>+</span>
                 <input
                   {...register('whatsapp_negocio')}
                   type="tel"
@@ -174,15 +269,12 @@ export default function ConfigPage() {
                 <p className="text-xs" style={{ color: '#9ca3af' }}>Recibe productos + dirección de entrega. Dejar vacío para no notificar.</p>
               </div>
             </div>
-
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
                 Número de WhatsApp
               </label>
               <div className="flex items-center border rounded-xl overflow-hidden" style={{ borderColor: '#e5e7eb' }}>
-                <span className="px-3 py-2.5 text-sm font-mono border-r" style={{ background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' }}>
-                  +
-                </span>
+                <span className="px-3 py-2.5 text-sm font-mono border-r" style={{ background: '#f9fafb', color: '#6b7280', borderColor: '#e5e7eb' }}>+</span>
                 <input
                   {...register('whatsapp_ajaka')}
                   type="tel"
@@ -205,9 +297,7 @@ export default function ConfigPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
-                  Apertura
-                </label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>Apertura</label>
                 <input
                   {...register('schedule_open')}
                   type="time"
@@ -216,9 +306,7 @@ export default function ConfigPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
-                  Cierre
-                </label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>Cierre</label>
                 <input
                   {...register('schedule_close')}
                   type="time"
@@ -226,6 +314,100 @@ export default function ConfigPage() {
                   style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* ── Método de pago ── */}
+          <div className="bg-white rounded-2xl p-5 flex flex-col gap-4" style={{ border: '1px solid #e5e7eb' }}>
+            <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <CreditCard size={20} style={{ color: '#1d5e8c' }} />
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Método de pago — Transferencia</p>
+                <p className="text-xs" style={{ color: '#9ca3af' }}>Se usa para generar el banner de pagos</p>
+              </div>
+            </div>
+
+            {/* Nombre del titular */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                Nombre del titular
+              </label>
+              <input
+                {...register('payment_name')}
+                type="text"
+                placeholder="Ej: Celestina López"
+                className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none"
+                style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
+              />
+            </div>
+
+            {/* Alias */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                Alias (CI o celular)
+              </label>
+              <input
+                {...register('payment_alias')}
+                type="text"
+                placeholder="Ej: 4234567-8 o 0986818441"
+                className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none font-mono"
+                style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36', fontFamily: 'monospace' }}
+              />
+              <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>
+                El alias es lo que los clientes copian para transferir
+              </p>
+            </div>
+
+            {/* Entidad bancaria */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                Entidad bancaria
+              </label>
+              <input
+                {...register('payment_bank')}
+                type="text"
+                placeholder="Ej: Tigo Money, Ueno, Banco Continental"
+                className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none"
+                style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
+              />
+            </div>
+
+            {/* Logo del banco */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#1d5e8c' }}>
+                Logo del banco
+              </label>
+              <div className="flex items-center gap-3">
+                {logoUrl && (
+                  <div className="w-14 h-14 rounded-xl border flex items-center justify-center p-1.5 flex-shrink-0"
+                    style={{ borderColor: '#e5e7eb', background: '#f9fafb' }}>
+                    <img src={logoUrl} alt="logo" className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => logoFileRef.current?.click()}
+                  disabled={logoUploading}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors disabled:opacity-60"
+                  style={{ borderColor: '#1d5e8c', color: '#1d5e8c', background: '#f0f7ff' }}
+                >
+                  {logoUploading
+                    ? <Loader2 size={15} className="animate-spin" />
+                    : <Upload size={15} />
+                  }
+                  {logoUrl ? 'Cambiar logo' : 'Subir logo'}
+                </button>
+                <input
+                  ref={logoFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+              <p className="text-xs mt-1.5" style={{ color: '#9ca3af' }}>
+                PNG con fondo transparente recomendado · Se sube al instante
+              </p>
             </div>
           </div>
 
@@ -238,8 +420,83 @@ export default function ConfigPage() {
             {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
             Guardar configuración
           </button>
-
         </form>
+      )}
+
+      {/* ── Banner de pago — preview en vivo ── */}
+      {!isLoading && (
+        <div className="mt-8 mb-4">
+          {/* Header sección */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: '#1d5e8c' }}>
+              <Share2 size={16} color="#fff" />
+            </div>
+            <div>
+              <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Banner de pagos</p>
+              <p className="text-xs" style={{ color: '#9ca3af' }}>Listo para compartir o guardar como estado de WhatsApp</p>
+            </div>
+          </div>
+
+          {/* Preview escalado */}
+          <div
+            ref={bannerBoxRef}
+            className="w-full overflow-hidden rounded-2xl mx-auto mb-4"
+            style={{
+              aspectRatio: `${FLYER_W}/${FLYER_H}`,
+              maxWidth: '240px',
+              boxShadow: '0 8px 36px rgba(29,94,140,0.18)',
+              border: '1px solid #e3edf2',
+            }}
+          >
+            <div style={{
+              width: FLYER_W,
+              height: FLYER_H,
+              transform: `scale(${bannerScale})`,
+              transformOrigin: 'top left',
+            }}>
+              <div ref={bannerRef}>
+                <PaymentBanner
+                  paymentName={watchPaymentName}
+                  paymentAlias={watchPaymentAlias}
+                  paymentBank={watchPaymentBank}
+                  logoUrl={logoUrl}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleShareBanner}
+              disabled={sharing || exporting}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: '#25D366' }}
+            >
+              {sharing
+                ? <Loader2 size={16} className="animate-spin" />
+                : <Share2 size={16} />
+              }
+              Compartir
+            </button>
+            <button
+              onClick={handleDownloadBanner}
+              disabled={sharing || exporting}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: '#1d5e8c' }}
+            >
+              {exporting
+                ? <Loader2 size={16} className="animate-spin" />
+                : <Download size={16} />
+              }
+              Descargar
+            </button>
+          </div>
+          <p className="text-xs text-center mt-2" style={{ color: '#9ca3af' }}>
+            "Compartir" abre WhatsApp directamente en el celular
+          </p>
+        </div>
       )}
     </div>
   )
