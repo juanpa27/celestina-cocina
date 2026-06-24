@@ -1,3 +1,32 @@
+// Parsea links de ubicación de WhatsApp / Google Maps / Apple Maps y coordenadas crudas.
+// Retorna { lat, lng } o null si no reconoce el formato.
+export function parseLocationUrl(text) {
+  if (!text?.trim()) return null
+  const s = text.trim()
+
+  const patterns = [
+    /[?&]q=(-?\d+\.?\d+),(-?\d+\.?\d+)/,   // ?q=lat,lng  (Google Maps/WhatsApp)
+    /[?&]ll=(-?\d+\.?\d+),(-?\d+\.?\d+)/,  // ?ll=lat,lng (Apple Maps)
+    /@(-?\d+\.?\d+),(-?\d+\.?\d+)/,          // @lat,lng    (Google Maps place URL)
+  ]
+  for (const re of patterns) {
+    const m = s.match(re)
+    if (m) {
+      const lat = parseFloat(m[1]), lng = parseFloat(m[2])
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng }
+    }
+  }
+
+  // Coordenadas crudas: "-25.3652, -56.0183" o "-25.3652 -56.0183"
+  const raw = s.match(/^(-?\d{1,3}\.\d+)[,\s]+(-?\d{1,3}\.\d+)$/)
+  if (raw) {
+    const lat = parseFloat(raw[1]), lng = parseFloat(raw[2])
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng }
+  }
+
+  return null
+}
+
 export function formatPrice(amount) {
   return `Gs ${Number(amount).toLocaleString('es-PY')}`
 }

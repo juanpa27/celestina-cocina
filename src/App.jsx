@@ -6,9 +6,10 @@ import AdminLayout from './pages/admin/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import OrdersPage from './pages/admin/OrdersPage'
 import MenuAdminPage from './pages/admin/MenuAdminPage'
-// Carga diferida: arrastran html-to-image, que no debe pesar en el bundle del menú público.
-const FlyersPage  = lazy(() => import('./pages/admin/FlyersPage'))
-const ConfigPage  = lazy(() => import('./pages/admin/ConfigPage'))
+// Carga diferida: arrastran html-to-image / Google Maps, fuera del bundle del menú público.
+const FlyersPage   = lazy(() => import('./pages/admin/FlyersPage'))
+const ConfigPage   = lazy(() => import('./pages/admin/ConfigPage'))
+const NewOrderPage = lazy(() => import('./pages/admin/NewOrderPage'))
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="menu"          element={<MenuAdminPage />} />
           <Route path="flyers"        element={<Suspense fallback={null}><FlyersPage /></Suspense>} />
           <Route path="configuracion" element={<Suspense fallback={null}><ConfigPage /></Suspense>} />
+          <Route path="nuevo-pedido"  element={<Suspense fallback={null}><NewOrderPage /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
-import { ShoppingBag, BellOff } from 'lucide-react'
+import { ShoppingBag, BellOff, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useOrders } from '../../hooks/useOrders'
 import OrderCard from '../../components/admin/OrderCard'
@@ -57,6 +58,7 @@ function playBeep() {
 }
 
 export default function OrdersPage() {
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState(null)
   const [dateFilter, setDateFilter] = useState('today')
   // Si el contexto ya está corriendo (navegación entre rutas), no mostrar el banner.
@@ -116,7 +118,7 @@ export default function OrdersPage() {
 
       {/* Encabezado */}
       <div className="flex items-center gap-3 mb-4">
-        <h1 className="font-display font-bold text-2xl" style={{ color: '#1c2b36' }}>Pedidos</h1>
+        <h1 className="font-display font-bold text-2xl flex-1" style={{ color: '#1c2b36' }}>Pedidos</h1>
         {pending > 0 && (
           <span
             className="px-2.5 py-0.5 rounded-full text-xs font-bold animate-pulse"
@@ -125,6 +127,13 @@ export default function OrdersPage() {
             {pending} nuevo{pending > 1 ? 's' : ''}
           </span>
         )}
+        <button
+          onClick={() => navigate('/admin/nuevo-pedido')}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-white"
+          style={{ background: '#1d5e8c' }}
+        >
+          <Plus size={15} /> Cargar pedido
+        </button>
       </div>
 
       {/* Filtro por fecha */}
