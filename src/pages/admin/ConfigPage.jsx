@@ -4,12 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Loader2, Save, Store, Lock, Clock, UtensilsCrossed, Truck,
-  CreditCard, Upload, Download, Share2, Copy, Check,
+  CreditCard, Upload, Download, Share2, Copy, Check, Bell, BellOff,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
 import { useIsOpen } from '../../hooks/useIsOpen'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { supabase } from '../../lib/supabase'
 import { exportFlyer, shareFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
 import PaymentBanner from '../../components/admin/flyers/PaymentBanner'
@@ -36,6 +37,7 @@ export default function ConfigPage() {
   const { data: isOpen = true } = useIsOpen()
   const [togglingOpen, setTogglingOpen] = useState(false)
   const queryClient = useQueryClient()
+  const push = usePushNotifications()
 
   // Logo del banco
   const [logoUrl, setLogoUrl] = useState('')
@@ -430,6 +432,63 @@ export default function ConfigPage() {
                 PNG con fondo transparente recomendado · Se sube al instante
               </p>
             </div>
+          </div>
+
+          {/* ── Notificaciones push ── */}
+          <div className="bg-white rounded-2xl p-5 flex flex-col gap-3" style={{ border: '1px solid #e5e7eb' }}>
+            <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <Bell size={20} style={{ color: '#1d5e8c' }} />
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Notificaciones de pedidos</p>
+                <p className="text-xs" style={{ color: '#9ca3af' }}>
+                  Recibí alertas aunque el celular esté bloqueado
+                </p>
+              </div>
+            </div>
+
+            {!push.supported && (
+              <p className="text-xs" style={{ color: '#9ca3af' }}>
+                Tu navegador no soporta notificaciones push. Instalá la app desde Chrome.
+              </p>
+            )}
+
+            {push.supported && push.permission === 'denied' && (
+              <p className="text-xs" style={{ color: '#ef4444' }}>
+                Notificaciones bloqueadas en el navegador. Entrá a Ajustes del sitio y habilitá permisos.
+              </p>
+            )}
+
+            {push.supported && push.permission !== 'denied' && (
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: push.subscribed ? '#15803d' : '#6b7280' }}>
+                    {push.subscribed ? 'Notificaciones activadas ✓' : 'Notificaciones desactivadas'}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>
+                    {push.subscribed
+                      ? 'Te llegará una alerta con cada pedido nuevo'
+                      : 'Activá para no perderte ningún pedido'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={push.subscribed ? push.unsubscribe : push.subscribe}
+                  disabled={push.loading}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold flex-shrink-0 transition-all disabled:opacity-60"
+                  style={push.subscribed
+                    ? { background: '#fee2e2', color: '#b91c1c' }
+                    : { background: '#1d5e8c', color: '#fff' }}
+                >
+                  {push.loading
+                    ? <Loader2 size={15} className="animate-spin" />
+                    : push.subscribed
+                      ? <BellOff size={15} />
+                      : <Bell size={15} />
+                  }
+                  {push.subscribed ? 'Desactivar' : 'Activar'}
+                </button>
+              </div>
+            )}
           </div>
 
           <button
