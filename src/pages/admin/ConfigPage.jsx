@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Loader2, Save, Store, Lock, Clock, UtensilsCrossed, Truck,
-  CreditCard, Upload, Download, Share2,
+  CreditCard, Upload, Download, Share2, Copy, Check,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -48,6 +48,7 @@ export default function ConfigPage() {
   const [bannerScale, setBannerScale] = useState(0.26)
   const [sharing, setSharing] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useLayoutEffect(() => {
     const box = bannerBoxRef.current
@@ -146,6 +147,25 @@ export default function ConfigPage() {
     } finally {
       setLogoUploading(false)
       if (logoFileRef.current) logoFileRef.current.value = ''
+    }
+  }
+
+  async function handleCopyText() {
+    const lines = [
+      '💳 *Datos para transferir*',
+      '',
+    ]
+    if (watchPaymentBank)  lines.push(`🏦 *Banco:* ${watchPaymentBank}`)
+    if (watchPaymentName)  lines.push(`👤 *Titular:* ${watchPaymentName}`)
+    if (watchPaymentAlias) lines.push(`🔢 *Alias:* ${watchPaymentAlias}`)
+    lines.push('', '✅ Transferí y mandame el comprobante 😊', '🍝 ¡Gracias por tu pedido! — Celestina Cocina')
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+      setCopied(true)
+      toast.success('¡Copiado! Pegalo directo en WhatsApp')
+      setTimeout(() => setCopied(false), 3000)
+    } catch {
+      toast.error('No se pudo copiar.')
     }
   }
 
@@ -493,8 +513,25 @@ export default function ConfigPage() {
               Descargar
             </button>
           </div>
-          <p className="text-xs text-center mt-2" style={{ color: '#9ca3af' }}>
+          <p className="text-xs text-center mt-2 mb-4" style={{ color: '#9ca3af' }}>
             "Compartir" abre WhatsApp directamente en el celular
+          </p>
+
+          {/* Copiar texto para WhatsApp */}
+          <button
+            onClick={handleCopyText}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm border-2 transition-all"
+            style={{
+              borderColor: copied ? '#16a34a' : '#e5e7eb',
+              color: copied ? '#16a34a' : '#1c2b36',
+              background: copied ? '#f0fdf4' : '#fff',
+            }}
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? '¡Copiado!' : 'Copiar datos para enviar por WhatsApp'}
+          </button>
+          <p className="text-xs text-center mt-1.5" style={{ color: '#9ca3af' }}>
+            Genera un mensaje con emojis listo para pegar en cualquier chat
           </p>
         </div>
       )}
