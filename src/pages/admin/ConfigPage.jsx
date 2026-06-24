@@ -69,7 +69,8 @@ export default function ConfigPage() {
     if (error) {
       toast.error('No se pudo cambiar el estado.')
     } else {
-      queryClient.invalidateQueries({ queryKey: ['is_open'] })
+      queryClient.setQueryData(['is_open'], next)          // UI inmediata
+      queryClient.invalidateQueries({ queryKey: ['is_open'] }) // refetch en background
       toast.success(next ? 'Negocio abierto ✓' : 'Negocio cerrado')
     }
     setTogglingOpen(false)

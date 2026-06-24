@@ -9,7 +9,8 @@ async function fetchIsOpen() {
     .in('key', ['is_open', 'schedule_open', 'schedule_close'])
   if (error) return true
   const map = Object.fromEntries((data ?? []).map(r => [r.key, r.value]))
-  if (map.is_open === 'false') return false
+  if (map.is_open === 'false') return false    // toggle manual: cerrado
+  if (map.is_open === 'true')  return true     // toggle manual: abierto (gana al horario)
   return isWithinSchedule(map.schedule_open, map.schedule_close)
 }
 
