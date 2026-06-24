@@ -4,7 +4,7 @@
   "description": "Gestión de pedidos y delivery de comida casera",
   "id": "/admin/dashboard",
   "start_url": "/admin/dashboard",
-  "scope": "/",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#1c2b36",
