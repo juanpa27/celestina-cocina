@@ -1,4 +1,4 @@
-// Genera íconos maskable + splash screens de iOS desde splash.png
+// Genera íconos maskable + splash screens de iOS desde logo-source.png
 // Uso: node scripts/gen-pwa-assets.mjs
 import sharp from 'sharp'
 import { readFileSync, writeFileSync } from 'fs'
@@ -6,7 +6,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const ROOT   = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const SRC    = path.join(ROOT, 'splash.png')
+const SRC    = path.join(ROOT, 'logo-source.png')
 const PUBLIC = path.join(ROOT, 'public')
 const HTML   = path.join(ROOT, 'index.html')
 
@@ -144,7 +144,7 @@ function updateManifest() {
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
-console.log('Generando assets PWA desde splash.png (1254×1254)...\n')
+console.log('Generando assets PWA desde logo-source.png (1024×1024)...\n')
 await genMaskable()
 const links = await genSplashes()
 injectLinks(links)
