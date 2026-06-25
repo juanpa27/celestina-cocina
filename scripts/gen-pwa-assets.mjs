@@ -52,22 +52,14 @@ async function makeBackground(w, h) {
 // ── 1. Ícono maskable 512×512 ───────────────────────────────────────────────
 async function genMaskable() {
   const SIZE = 512
-  // Safe zone = 80% → logo al 68% para dejar margen cómodo al recorte circular
-  const LOGO = Math.round(SIZE * 0.68)
-
-  const logoBuffer = await sharp(SRC)
-    .resize(LOGO, LOGO, { fit: 'contain', background: BG })
-    .removeAlpha()
-    .toBuffer()
-
-  const bg = await sharp({ create: { width: SIZE, height: SIZE, channels: 3, background: BG } })
-    .composite([{ input: logoBuffer, gravity: 'centre' }])
-    .png({ compressionLevel: 9 })
-    .toBuffer()
-
+  // logo-source.png ya tiene fondo blanco y llena todo el canvas → resize directo
   const dest = path.join(PUBLIC, 'maskable-512x512.png')
-  await sharp(bg).toFile(dest)
-  const kb = Math.round(bg.length / 1024)
+  const info = await sharp(SRC)
+    .resize(SIZE, SIZE, { fit: 'cover' })
+    .removeAlpha()
+    .png({ compressionLevel: 9 })
+    .toFile(dest)
+  const kb = Math.round(info.size / 1024)
   console.log(`✓  maskable-512x512.png  (${kb} KB)`)
 }
 
