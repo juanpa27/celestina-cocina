@@ -89,6 +89,13 @@ const S = StyleSheet.create({
     textAlign: 'right',
   },
 
+  // ── Azulejo stripe ──
+  azuStrip: {
+    flexDirection: 'row',
+    height: 10,
+    overflow: 'hidden',
+  },
+
   // ── Cuerpo ──
   body: {
     paddingHorizontal: 20,
@@ -207,9 +214,21 @@ function CartaDocument({ categories, config, logoUrl }) {
           </View>
           <View style={S.headerCenter}>
             <Text style={S.brand}>CELESTINA COCINA</Text>
-            <Text style={S.tagline}>PASTAS ARTESANALES  ·  CAAGUAZU, PARAGUAY</Text>
+            <Text style={S.tagline}>PASTAS CASERAS Y MÁS  ·  CAAGUAZÚ, PARAGUAY</Text>
           </View>
           <Text style={S.headerDate}>Carta · {fecha}</Text>
+        </View>
+
+        {/* ── Azulejo stripe ── */}
+        <View style={S.azuStrip}>
+          {Array.from({ length: 11 }, (_, i) => (
+            <View key={i} style={{ flexDirection: 'row' }}>
+              <View style={{ width: 28, height: 10, backgroundColor: '#1d5e8c' }} />
+              <View style={{ width: 4,  height: 10, backgroundColor: '#f2c14e' }} />
+              <View style={{ width: 28, height: 10, backgroundColor: '#5b96bf' }} />
+              <View style={{ width: 4,  height: 10, backgroundColor: '#f2c14e' }} />
+            </View>
+          ))}
         </View>
 
         {/* ── Categorías ── */}
@@ -281,7 +300,7 @@ export default function CartaMenuPage() {
   const { data: config } = useConfig()
   const [generating, setGenerating] = useState(false)
 
-  const logoUrl = `${window.location.origin}/logo-celestina.jpg`
+  const logoUrl = `${window.location.origin}/logo_v2.jpeg`
 
   const activeCats = categories.filter(c => c.active)
   const totalItems = activeCats.reduce(

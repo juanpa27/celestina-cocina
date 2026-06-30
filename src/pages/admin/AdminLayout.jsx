@@ -41,7 +41,7 @@ export default function AdminLayout() {
         <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ border: '2px solid #f2c14e' }}>
-              <img src="/logo-celestina.jpg" alt="Celestina Cocina" className="w-full h-full object-cover" />
+              <img src="/logo_v2.jpeg" alt="Celestina Cocina" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-display font-bold text-white text-sm leading-tight">Celestina</p>
@@ -91,7 +91,7 @@ export default function AdminLayout() {
       >
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ border: '1.5px solid #f2c14e' }}>
-            <img src="/logo-celestina.jpg" alt="" className="w-full h-full object-cover" />
+            <img src="/logo_v2.jpeg" alt="" className="w-full h-full object-cover" />
           </div>
           <p className="font-display font-bold text-white text-sm">Celestina · Admin</p>
         </div>
@@ -131,7 +131,7 @@ export default function AdminLayout() {
         >
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ border: '2px solid #f2c14e' }}>
-              <img src="/logo-celestina.jpg" alt="Celestina Cocina" className="w-full h-full object-cover" />
+              <img src="/logo_v2.jpeg" alt="Celestina Cocina" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-display font-bold text-white text-sm leading-tight">Celestina</p>
