@@ -196,7 +196,7 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 ## Back office — notificaciones
 
 - Supabase Realtime para ver pedidos nuevos en vivo mientras la pestaña/tablet está abierta (sonido/badge).
-- No se implementa Web Push / PWA push por ahora — el `wa.me` ya cubre la notificación "real" al celular de la dueña. Evaluar a futuro si crece el volumen.
+- **Web Push implementado** (sesión 2026-06-24): notificaciones nativas al celular incluso con el navegador cerrado. Ver sección "Implementado (sesión 2026-06-24)" para detalles.
 
 ## Open Graph / SPA en Vercel
 
@@ -209,6 +209,27 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 - Métodos de pago: mostrar como texto simple en checkout (efectivo, Tigo Money, Ueno, transferencia) — no requiere tabla propia inicialmente.
 - Zona/costo de delivery: campo simple configurable (monto fijo o por zona), pendiente de definir si se modela en tabla propia o como config simple.
 - Horario de atención: posible campo de config para mostrar "cerrado" fuera de horario — pendiente de definir.
+
+## Implementado (sesión 2026-06-24)
+
+- **Configuración de método de pago** (`ConfigPage` → sección "Método de pago"): titular, alias (CI/teléfono), entidad bancaria, logo del banco (subida a Supabase Storage bucket `logos`). SQL migration: `payment_config_migration.sql` (correr una vez en Supabase, también crea el bucket). `ConfigPage` lazy-loaded para mantener `html-to-image` fuera del bundle público.
+- **PaymentBanner** (`src/components/admin/flyers/PaymentBanner.jsx`): imagen 1080×1920 con preview en vivo mientras se tipean los campos. Jerarquía: Alias (chip azul full-width, 72px mono) → Titular (64px) → Entidad (52px). Sin footer. Botón "Compartir" (Web Share API → abre WhatsApp nativo en mobile) con fallback a descarga en desktop. Botón "Descargar" (JPG via html-to-image). Botón "Copiar datos para WhatsApp": genera texto formateado con emojis (🏦👤🔢), muestra checkmark verde 3s. `flyer.js` refactorizado: `renderToBlob()` compartido entre `exportFlyer` y el nuevo `shareFlyer`.
+- **Flyers rediseñados** (full-bleed, dark layout): `DishFlyer` — foto ocupa 72% del canvas con gradient overlay transparente→`#1c2b36`, texto encima del gradient, badge de marca (logo + nombre) top-right semitransparente, precio en amarillo 110px debajo. `CategoryFlyer` — grilla 2×2 con fotos full-bleed + gradient + nombre/precio por celda, header oscuro con nombre de categoría + badge inline. Se eliminaron el header bar y el footer CTA de ambas plantillas.
+- **Carga manual de pedidos** (`/admin/nuevo-pedido`, `src/pages/admin/NewOrderPage.jsx`): botón "Cargar pedido" en header de `/pedidos`. Campos: nombre/teléfono del cliente, selector de producto (categoría → item → radio de modificadores → stepper qty → "Agregar"), carrito con +/- y remove por línea, ubicación (pegar URL de WhatsApp/Google Maps o coordenadas crudas → auto-parse + reverse geocode, O elegir en mapa con `LocationPicker`), notas. Saltea el check de `is_open` (el admin puede cargar pedidos aunque esté "cerrado"). Al confirmar: inserta en `orders` + `order_items` + `order_item_modifiers`, redirige a `/pedidos`. `parseLocationUrl()` agregado a `utils.js` (maneja `?q=`, `?ll=`, `@lat,lng` y coordenadas crudas). Lazy-loaded.
+- **Dashboard mejorado** (`DashboardPage.jsx`): animaciones con framer-motion (cards con stagger 70ms, número "Facturado" cuenta desde 0 con ease-out cúbico, barras de top productos animan su ancho). Nuevo filtro "Mes": grilla 4×3 de meses + selector de año (2026/2027), meses futuros en gris, mes actual con punto indicador. Medallas 🥇🥈🥉 en top productos. Label del período activo bajo el título "Resumen". Skeleton loader mientras carga. Estado vacío en top productos.
+- **Fix toggle abrir/cerrar** (`useIsOpen.js` + `ConfigPage`): el override manual ahora gana siempre sobre el check de horario (`'false'` cierra, `'true'` abre, `undefined` → revisa horario). `setQueryData` en ConfigPage actualiza la UI instantáneamente sin esperar `invalidateQueries`.
+- **PWA instalable en `/admin`** (`vite-plugin-pwa`, Workbox, `manifest.json`):
+  - SW con Workbox: pre-cachea bundle, runtime StaleWhileRevalidate (Storage 7d) / NetworkFirst (API 8s timeout) / CacheFirst (Fonts 1 año) / navigateFallback → index.html.
+  - `manifest.json`: `start_url`/`id` = `/admin/dashboard`, `background_color` oscuro `#1c2b36`, shortcuts "Ver pedidos" y "Cargar pedido".
+  - Íconos maskable 512×512 + 13 splash screens iOS (iPhone SE → iPad Pro 12.9") generados con `scripts/gen-pwa-assets.mjs` (sharp). Regenerar con `npm run gen:pwa`.
+  - `scope` fijado a `/admin` — clientes en el menú público NO ven el prompt de instalación.
+- **Web Push — notificaciones con celular bloqueado**:
+  - `src/sw.js`: SW propio (modo `injectManifest`). Handler `push`: muestra notificación con título `#N` (número de pedido), body con nombre del cliente y total en Gs, vibración. Handler `notificationclick`: reutiliza ventana admin abierta o abre nueva.
+  - `src/hooks/usePushNotifications.js`: pide permiso Notification, suscribe al browser con VAPID, guarda endpoint en Supabase (tabla `push_subscriptions`, evita duplicados por endpoint). `unsubscribe` limpia browser + BD.
+  - `ConfigPage` → sección "Notificaciones": botón Activar/Desactivar con estados (no soportado / bloqueado / activo / inactivo).
+  - Edge Function `supabase/functions/notify-new-order/index.ts` (Deno): recibe webhook POST de Supabase, lee todas las suscripciones, envía push con `web-push` (npm:), limpia automáticamente suscripciones con 410 Gone.
+  - SQL trigger `supabase/migrations/20260624_push_webhook_trigger.sql`: `AFTER INSERT ON orders` → llama a la Edge Function via `net.http_post`. Desplegada en el proyecto Supabase con VAPID keys en secrets.
+- **SEO**: título de la página pública cambiado a "Pedí acá" (antes "Menú Digital").
 
 ## Implementado (sesión 2026-06-20)
 
@@ -226,6 +247,18 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 - **Dashboard** (`/admin/dashboard`, ahora es el landing de `/admin`): facturado (excluye cancelados), pedidos, ticket promedio, pendientes (con acceso rápido grande a /pedidos), desglose por estado y top productos. Toggle Hoy/Semana/Mes/Todo. Reusa `useOrders` (sin queries nuevas).
 - **Realtime**: la suscripción ya estaba en `useOrders.js`. Se activó la replicación: `alter publication supabase_realtime add table orders;` (hecho). El sonido de pedido nuevo (`playBeep` en `OrdersPage`) depende de eso + de una interacción previa del usuario (autoplay del navegador).
 
+## Implementado (sesión 2026-06-30)
+
+- **CRUD de Complementos** (`/admin/complementos`, `src/pages/admin/ComplementosPage.jsx`, `src/hooks/useModifiers.js`): gestión completa de grupos de modificadores y sus opciones desde el back office. `GroupFormModal` (crear/editar grupo: nombre, tipo single/multiple, requerido), `ModifierFormModal` (crear/editar opción con extra_price), `DeleteGroupModal` (confirmación en 2 pasos cuando el grupo tiene platos vinculados). Borrar grupo hace cascade en Supabase (borra `modifiers` y `menu_item_modifier_groups`). `MenuItemEditor` actualizado con checkboxes para vincular grupos a platos (carga grupos existentes al editar, sincroniza con DELETE+INSERT en submit).
+- **Hamburger drawer en mobile** (`AdminLayout.jsx`): reemplazó el sticky bottom nav de 6 ítems por hamburger en la topbar → drawer deslizable desde la izquierda. Overlay semitransparente cierra el drawer al tocar fuera. Transición CSS 0.28s cubic-bezier. Desktop: sidebar sin cambios.
+- **Carta PDF** (`/admin/carta`, `src/pages/admin/CartaMenuPage.jsx`): genera PDF del menú activo con `@react-pdf/renderer` v4.5.1. Header azul con logo circular (PNG 1024px, `borderRadius` en el `Image` directamente — `overflow:hidden` en View padre no clipea en react-pdf), franja de azulejos (filas de Views coloreados simulando el `repeating-linear-gradient`), categorías con header en Titan One, items con precio/descuento/notas/modificadores. `Font.register()` con Titan One (TTF de Google Fonts). `Font.registerHyphenationCallback` evita que los nombres se corten. Descarga directa vía `pdf().toBlob()` → `URL.createObjectURL`. Preview en `<iframe>` con `BlobProvider`. Lazy-loaded.
+  - `logo-source.png` (1024×1024) copiado a `public/` para que sea accesible como URL estática en el PDF.
+  - Titan One agregado al `<link>` de Google Fonts en `index.html` para disponibilidad en html-to-image también.
+- **Flyer "Texto Hero"** (`src/components/admin/flyers/TextHeroFlyer.jsx`): tercera plantilla en `/admin/flyers`. Foto del plato como fondo full-bleed → overlay azul de marca semitransparente → patrón SVG de rombos → texto gigante Titan One blanco centrado → degradados top/bottom → logo medallón → precio en amarillo. `autoSplitHeroName()` divide palabras largas en chunks de ~4 chars (ej: TAGLIATELLES → TAG/LIA/TEL/LES → font 380px en vez de 126px). `calcFontSize()` adapta el tamaño a la línea más larga. Campo `<textarea>` en FlyersPage: cada línea = una línea gigante, editable manualmente.
+- **Sticky bottom nav en menú público** (`src/components/menu/MenuBottomNav.jsx`): pill flotante oscuro centrado, solo mobile. 5 íconos en amarillo (#f2c14e): Inicio (scroll top) / Menú (scroll primera categoría) / Carrito (con badge de cantidad) / WhatsApp / Ayuda (modal cómo pedir). Reemplazó el botón "Truck" suelto que había en esquina inferior izquierda. `CartFloating` sube a `bottom: 5.5rem` para aparecer encima del nav sin solaparse.
+- **@vercel/analytics**: instalado. `<Analytics />` de `@vercel/analytics/react` (no `/next` — este es Vite SPA) montado en `App.jsx` dentro del `BrowserRouter` para capturar navegaciones SPA automáticamente.
+- **README.md**: reemplazado el default de Vite con documentación real del proyecto (stack, funcionalidades, modelo de datos, variables de entorno, scripts, estructura de directorios).
+
 ## Pendientes / decisiones abiertas
 
 - [ ] Definir si habrá costo de envío y cómo se calcula (fijo / por zona / gratis).
@@ -237,4 +270,4 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
 - [ ] Revisar si "Pasta artesanal a la crema" (que aparece como guarnición) duplica o se relaciona con los items de "Pastas Artesanales" — por ahora se trata como item independiente en Guarniciones.
 - [x] Generar `schema.sql` + `seed.sql` con el esquema, las 7 categorías, ~30 productos y los 2 grupos de modificadores.
 - [ ] CRUD admin faltante: borrar plato, crear/borrar categoría (definir confirmación fuerte para borrar categoría por el `on delete cascade`).
-- [ ] Desbloqueo de audio en el primer click del back office (para que el `playBeep` del primer pedido no lo bloquee el navegador).
+- [ ] Desbloqueo de audio en el primer click del back office (para que el `playBeep` del primer pedido no lo bloquee el navegador). Nota: Web Push cubre la notificación con celular bloqueado — este ítem refiere solo al beep dentro de la pestaña abierta.
