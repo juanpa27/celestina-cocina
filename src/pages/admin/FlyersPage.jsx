@@ -1,17 +1,19 @@
 import { useState, useRef, useLayoutEffect, useMemo } from 'react'
-import { Download, Loader2, UtensilsCrossed, LayoutGrid } from 'lucide-react'
+import { Download, Loader2, UtensilsCrossed, LayoutGrid, Type } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
 import { exportFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
 import DishFlyer from '../../components/admin/flyers/DishFlyer'
 import CategoryFlyer from '../../components/admin/flyers/CategoryFlyer'
+import TextHeroFlyer from '../../components/admin/flyers/TextHeroFlyer'
 
 export default function FlyersPage() {
   const { data: categories, isLoading } = useMenuAdmin()
 
-  const [mode, setMode] = useState('dish')        // 'dish' | 'category'
+  const [mode, setMode] = useState('dish')        // 'dish' | 'category' | 'hero'
   const [categoryId, setCategoryId] = useState(null)
   const [dishId, setDishId] = useState(null)
+  const [displayName, setDisplayName] = useState('')
   const [format, setFormat] = useState('webp')    // 'webp' | 'jpg'
   const [exporting, setExporting] = useState(false)
 
@@ -42,13 +44,29 @@ export default function FlyersPage() {
     ?? allDishes[0]
     ?? null
 
+  // Cuando cambia el plato en modo hero, actualiza el nombre sugerido
+  function handleDishChange(id) {
+    setDishId(id)
+    if (mode === 'hero') {
+      const dish = allDishes.find(d => d.id === id)
+      if (dish) setDisplayName(dish.name.toUpperCase())
+    }
+  }
+
+  function handleModeChange(m) {
+    setMode(m)
+    if (m === 'hero' && activeDish && !displayName) {
+      setDisplayName(activeDish.name.toUpperCase())
+    }
+  }
+
   async function handleDownload() {
     if (!flyerRef.current) return
     setExporting(true)
     try {
-      const name = mode === 'dish'
-        ? `celestina-${activeDish?.name ?? 'plato'}`
-        : `celestina-${activeCategory?.name ?? 'menu'}`
+      const name = mode === 'category'
+        ? `celestina-${activeCategory?.name ?? 'menu'}`
+        : `celestina-${activeDish?.name ?? 'plato'}`
       const bytes = await exportFlyer(flyerRef.current, { format, fileName: name })
       toast.success(`Flyer listo · ${(bytes / 1024).toFixed(0)} KB`)
     } catch (e) {
@@ -82,18 +100,19 @@ export default function FlyersPage() {
           {/* Tipo de flyer */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#1d5e8c' }}>Tipo de flyer</label>
-            <div className="grid grid-cols-2 gap-2">
-              <ModeBtn active={mode === 'dish'} onClick={() => setMode('dish')} icon={UtensilsCrossed} label="Por plato" />
-              <ModeBtn active={mode === 'category'} onClick={() => setMode('category')} icon={LayoutGrid} label="Por categoría" />
+            <div className="grid grid-cols-3 gap-2">
+              <ModeBtn active={mode === 'dish'} onClick={() => handleModeChange('dish')} icon={UtensilsCrossed} label="Por plato" />
+              <ModeBtn active={mode === 'category'} onClick={() => handleModeChange('category')} icon={LayoutGrid} label="Categoría" />
+              <ModeBtn active={mode === 'hero'} onClick={() => handleModeChange('hero')} icon={Type} label="Texto hero" />
             </div>
           </div>
 
-          {/* Selección */}
-          {mode === 'dish' ? (
+          {/* Selección de plato (dish + hero) */}
+          {(mode === 'dish' || mode === 'hero') && (
             <Field label="Plato">
               <select
                 value={activeDish?.id ?? ''}
-                onChange={e => setDishId(e.target.value)}
+                onChange={e => handleDishChange(e.target.value)}
                 className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none bg-white"
                 style={{ borderColor: '#e5e7eb' }}
               >
@@ -106,7 +125,26 @@ export default function FlyersPage() {
                 ))}
               </select>
             </Field>
-          ) : (
+          )}
+
+          {/* Campo de nombre personalizado — solo en modo hero */}
+          {mode === 'hero' && (
+            <Field label="Texto del flyer">
+              <input
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value.toUpperCase())}
+                placeholder="TAGLIATELLES"
+                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none font-bold tracking-widest"
+                style={{ borderColor: '#e5e7eb', fontFamily: 'inherit' }}
+              />
+              <p className="text-xs mt-1.5" style={{ color: '#7c8a93' }}>
+                Cada palabra va en su propia línea. Podés separar en varias palabras para ajustar el tamaño.
+              </p>
+            </Field>
+          )}
+
+          {/* Selección de categoría */}
+          {mode === 'category' && (
             <Field label="Categoría">
               <select
                 value={activeCategory?.id ?? ''}
@@ -152,9 +190,9 @@ export default function FlyersPage() {
           >
             <div style={{ width: FLYER_W, height: FLYER_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
               <div ref={flyerRef}>
-                {mode === 'dish'
-                  ? <DishFlyer item={activeDish} categoryName={activeDish?.categoryName} />
-                  : <CategoryFlyer category={activeCategory} />}
+                {mode === 'dish' && <DishFlyer item={activeDish} categoryName={activeDish?.categoryName} />}
+                {mode === 'category' && <CategoryFlyer category={activeCategory} />}
+                {mode === 'hero' && <TextHeroFlyer item={activeDish} displayName={displayName} />}
               </div>
             </div>
           </div>
