@@ -50,22 +50,16 @@ const S = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  logoWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: AMARILLO,
-    flexShrink: 0,
+    paddingVertical: 12,
   },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: AMARILLO,
+    marginRight: 14,
+    flexShrink: 0,
   },
   headerCenter: {
     flex: 1,
@@ -210,9 +204,7 @@ function CartaDocument({ categories, config, logoUrl }) {
 
         {/* ── Header ── */}
         <View style={S.header}>
-          <View style={S.logoWrap}>
-            <Image src={logoUrl} style={S.logo} />
-          </View>
+          <Image src={logoUrl} style={S.logo} />
           <View style={S.headerCenter}>
             <Text style={S.brand}>CELESTINA COCINA</Text>
             <Text style={S.tagline}>PASTAS CASERAS Y MÁS  ·  CAAGUAZÚ, PARAGUAY</Text>
