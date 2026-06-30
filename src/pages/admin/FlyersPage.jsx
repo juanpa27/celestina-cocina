@@ -5,7 +5,7 @@ import { useMenuAdmin } from '../../hooks/useMenu'
 import { exportFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
 import DishFlyer from '../../components/admin/flyers/DishFlyer'
 import CategoryFlyer from '../../components/admin/flyers/CategoryFlyer'
-import TextHeroFlyer from '../../components/admin/flyers/TextHeroFlyer'
+import TextHeroFlyer, { autoSplitHeroName } from '../../components/admin/flyers/TextHeroFlyer'
 
 export default function FlyersPage() {
   const { data: categories, isLoading } = useMenuAdmin()
@@ -44,19 +44,19 @@ export default function FlyersPage() {
     ?? allDishes[0]
     ?? null
 
-  // Cuando cambia el plato en modo hero, actualiza el nombre sugerido
+  // Cuando cambia el plato en modo hero, actualiza el nombre pre-dividido
   function handleDishChange(id) {
     setDishId(id)
     if (mode === 'hero') {
       const dish = allDishes.find(d => d.id === id)
-      if (dish) setDisplayName(dish.name.toUpperCase())
+      if (dish) setDisplayName(autoSplitHeroName(dish.name))
     }
   }
 
   function handleModeChange(m) {
     setMode(m)
-    if (m === 'hero' && activeDish && !displayName) {
-      setDisplayName(activeDish.name.toUpperCase())
+    if (m === 'hero' && activeDish) {
+      setDisplayName(autoSplitHeroName(activeDish.name))
     }
   }
 
@@ -130,15 +130,16 @@ export default function FlyersPage() {
           {/* Campo de nombre personalizado — solo en modo hero */}
           {mode === 'hero' && (
             <Field label="Texto del flyer">
-              <input
+              <textarea
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value.toUpperCase())}
-                placeholder="TAGLIATELLES"
-                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none font-bold tracking-widest"
-                style={{ borderColor: '#e5e7eb', fontFamily: 'inherit' }}
+                placeholder={'TAG\nLIA\nTEL\nLES'}
+                rows={4}
+                className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none font-bold tracking-widest resize-none"
+                style={{ borderColor: '#e5e7eb', fontFamily: 'inherit', lineHeight: 1.6 }}
               />
               <p className="text-xs mt-1.5" style={{ color: '#7c8a93' }}>
-                Cada palabra va en su propia línea. Podés separar en varias palabras para ajustar el tamaño.
+                Cada línea = una línea gigante en el flyer. El tamaño se adapta automáticamente.
               </p>
             </Field>
           )}
