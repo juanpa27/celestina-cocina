@@ -1,434 +1,335 @@
 import { useState, useMemo } from 'react'
+import {
+  Document, Page, View, Text, Image,
+  StyleSheet, Font, pdf, BlobProvider,
+} from '@react-pdf/renderer'
 import { BookOpen, FileText, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenu } from '../../hooks/useMenu'
 import { useConfig } from '../../hooks/useConfig'
 import { calcDiscountedPrice } from '../../lib/utils'
 
+// ── Fuentes ──────────────────────────────────────────────────────────────────
+
+Font.register({
+  family: 'TitanOne',
+  src: 'https://fonts.gstatic.com/s/titanone/v17/mFTzWbsGxbbS_J5cQcjykw.ttf',
+})
+
+// Sin hifenación — los nombres de platos no deben cortarse
+Font.registerHyphenationCallback(word => [word])
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtGs(n) {
-  return 'Gs ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return 'Gs ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-// ── Generador de HTML ────────────────────────────────────────────────────────
+// ── Paleta ───────────────────────────────────────────────────────────────────
 
-function buildCartaHTML({ categories, config, origin }) {
+const AZUL      = '#1d5e8c'
+const AMARILLO  = '#f2c14e'
+const CREMA     = '#fdfbf6'
+const AZ_CLARO  = '#5b96bf'
+const TEXTO     = '#1c2b36'
+const GRIS      = '#6b7280'
+const GRIS_L    = '#9ca3af'
+
+// ── Estilos PDF ──────────────────────────────────────────────────────────────
+
+const S = StyleSheet.create({
+
+  page: {
+    backgroundColor: CREMA,
+    paddingBottom: 46,
+  },
+
+  // ── Header ──
+  header: {
+    backgroundColor: AZUL,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  logoWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: AMARILLO,
+    flexShrink: 0,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
+  headerCenter: {
+    flex: 1,
+  },
+  brand: {
+    fontFamily: 'TitanOne',
+    fontSize: 23,
+    color: AMARILLO,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    fontFamily: 'Helvetica',
+    fontSize: 7,
+    color: AZ_CLARO,
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  headerDate: {
+    fontFamily: 'Helvetica',
+    fontSize: 7.5,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'right',
+  },
+
+  // ── Cuerpo ──
+  body: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+  },
+
+  // ── Categoría ──
+  cat: {
+    marginBottom: 12,
+  },
+  catHdr: {
+    backgroundColor: AZUL,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    marginBottom: 1,
+  },
+  catName: {
+    fontFamily: 'TitanOne',
+    fontSize: 11,
+    color: AMARILLO,
+    letterSpacing: 0.3,
+  },
+
+  // ── Ítems ──
+  itemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eeeee8',
+  },
+  itemEven: {
+    backgroundColor: 'rgba(29,94,140,0.03)',
+  },
+  itemLeft: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  itemName: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 10,
+    color: TEXTO,
+  },
+  itemMod: {
+    fontFamily: 'Helvetica-Oblique',
+    fontSize: 8,
+    color: GRIS,
+    marginTop: 2,
+  },
+  itemNotes: {
+    fontFamily: 'Helvetica-Oblique',
+    fontSize: 8,
+    color: GRIS_L,
+    marginTop: 1,
+  },
+  priceCol: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+  },
+  price: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 10,
+    color: AZUL,
+  },
+  priceOld: {
+    fontFamily: 'Helvetica',
+    fontSize: 8,
+    color: GRIS_L,
+    textDecoration: 'line-through',
+    textAlign: 'right',
+  },
+
+  // ── Footer fijo en cada página ──
+  footer: {
+    position: 'absolute',
+    bottom: 14,
+    left: 20,
+    right: 20,
+    backgroundColor: AZUL,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  footerText: {
+    fontFamily: 'Helvetica',
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'center',
+  },
+})
+
+// ── Documento PDF ─────────────────────────────────────────────────────────────
+
+function CartaDocument({ categories, config, logoUrl }) {
   const whatsapp = config?.whatsapp_number ?? ''
-  const logo = `${origin}/logo-celestina.jpg`
   const fecha = new Date().toLocaleDateString('es', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+  const footerLine = whatsapp
+    ? `Pedidos por WhatsApp: ${whatsapp}  ·  celestina-cocina.vercel.app`
+    : `Pedidos por WhatsApp  ·  celestina-cocina.vercel.app`
 
-  const catBlocks = categories
-    .filter(c => c.active)
-    .map(cat => {
-      const items = (cat.items ?? []).filter(i => i.available)
-      if (!items.length) return ''
+  const cats = categories.filter(c => c.active)
 
-      const rows = items.map(item => {
-        const price = calcDiscountedPrice(item.price, item.discount_pct)
-        const hasDiscount = item.discount_pct > 0
+  return (
+    <Document title="Celestina Cocina — Carta" author="Celestina Cocina">
+      <Page size="A4" style={S.page}>
 
-        const priceCol = hasDiscount
-          ? `<div class="price-old">${fmtGs(item.price)}</div><div class="price">${fmtGs(price)}</div>`
-          : `<div class="price">${fmtGs(price)}</div>`
+        {/* ── Header ── */}
+        <View style={S.header}>
+          <View style={S.logoWrap}>
+            <Image src={logoUrl} style={S.logo} />
+          </View>
+          <View style={S.headerCenter}>
+            <Text style={S.brand}>CELESTINA COCINA</Text>
+            <Text style={S.tagline}>PASTAS ARTESANALES  ·  CAAGUAZU, PARAGUAY</Text>
+          </View>
+          <Text style={S.headerDate}>Carta · {fecha}</Text>
+        </View>
 
-        const mods = (item.modifierGroups ?? []).map(g => {
-          const opts = g.modifiers
-            .map(m => m.extra_price > 0
-              ? `${m.name}&thinsp;<em>(+${fmtGs(m.extra_price)})</em>`
-              : m.name)
-            .join(' &middot; ')
-          const req = g.required
-            ? '<span class="req">&#10022;</span>'
-            : '<span class="opt">&#9702;</span>'
-          return `<div class="mod">${req} <b>${g.name}:</b> ${opts}</div>`
-        }).join('')
+        {/* ── Categorías ── */}
+        <View style={S.body}>
+          {cats.map(cat => {
+            const items = (cat.items ?? []).filter(i => i.available)
+            if (!items.length) return null
+            return (
+              <View key={cat.id} style={S.cat} wrap={false}>
+                <View style={S.catHdr}>
+                  <Text style={S.catName}>{cat.name.toUpperCase()}</Text>
+                </View>
+                <View>
+                  {items.map((item, idx) => {
+                    const price = calcDiscountedPrice(item.price, item.discount_pct)
+                    const hasDisc = item.discount_pct > 0
+                    const mods = item.modifierGroups ?? []
+                    return (
+                      <View
+                        key={item.id}
+                        style={[S.itemRow, idx % 2 === 1 && S.itemEven]}
+                      >
+                        <View style={S.itemLeft}>
+                          <Text style={S.itemName}>{item.name}</Text>
+                          {mods.map(g => (
+                            <Text key={g.id} style={S.itemMod}>
+                              {g.required ? '★ ' : '◦ '}
+                              {g.name}:{' '}
+                              {g.modifiers.map(m =>
+                                m.extra_price > 0
+                                  ? `${m.name} (+${fmtGs(m.extra_price)})`
+                                  : m.name
+                              ).join(' \xB7 ')}
+                            </Text>
+                          ))}
+                          {item.notes
+                            ? <Text style={S.itemNotes}>{'⤷'} {item.notes}</Text>
+                            : null}
+                        </View>
+                        <View style={S.priceCol}>
+                          {hasDisc && (
+                            <Text style={S.priceOld}>{fmtGs(item.price)}</Text>
+                          )}
+                          <Text style={S.price}>{fmtGs(price)}</Text>
+                        </View>
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            )
+          })}
+        </View>
 
-        const notes = item.notes
-          ? `<div class="notes">&#8627; ${item.notes}</div>`
-          : ''
+        {/* ── Footer (fixed = aparece en cada página) ── */}
+        <View fixed style={S.footer}>
+          <Text style={S.footerText}>{footerLine}</Text>
+        </View>
 
-        return `
-<div class="item">
-  <div class="item-body">
-    <div class="item-name">${item.name}</div>
-    ${mods}${notes}
-  </div>
-  <div class="item-prices">${priceCol}</div>
-</div>`
-      }).join('')
-
-      return `
-<div class="cat">
-  <div class="cat-hdr">${cat.name.toUpperCase()}</div>
-  <div class="cat-items">${rows}</div>
-</div>`
-    }).join('')
-
-  const contactLine = whatsapp
-    ? `&#128241; WhatsApp: <b>${whatsapp}</b> &nbsp;&bull;&nbsp; &#127760; celestina-cocina.vercel.app`
-    : `&#128241; Pedís por WhatsApp &nbsp;&bull;&nbsp; &#127760; celestina-cocina.vercel.app`
-
-  return `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Celestina Cocina &mdash; Carta</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Titan+One&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-@page{size:A4 portrait;margin:0}
-
-body{
-  font-family:'DM Sans',system-ui,sans-serif;
-  color:#1c2b36;
-  background:#f3f4f6;
-  -webkit-print-color-adjust:exact;
-  print-color-adjust:exact;
+      </Page>
+    </Document>
+  )
 }
 
-/* ── Azulejo tile pattern ── */
-.tile{
-  width:100%;
-  height:52px;
-  background-color:#1d5e8c;
-  background-image:
-    linear-gradient(135deg,#f2c14e 25%,transparent 25%),
-    linear-gradient(225deg,#f2c14e 25%,transparent 25%),
-    linear-gradient(315deg,#f2c14e 25%,transparent 25%),
-    linear-gradient( 45deg,#f2c14e 25%,transparent 25%);
-  background-size:26px 26px;
-  background-position:0 0,0 13px,13px -13px,-13px 0;
-  flex-shrink:0;
-}
-
-/* ── Cover ── */
-.cover{
-  width:210mm;
-  height:297mm;
-  background:#1d5e8c;
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  page-break-after:always;
-  break-after:page;
-  overflow:hidden;
-}
-
-.cover-body{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:0 52px;
-  gap:0;
-}
-
-.cover-logo{
-  width:100px;
-  height:100px;
-  border-radius:50%;
-  border:4px solid #f2c14e;
-  object-fit:cover;
-  box-shadow:0 8px 32px rgba(0,0,0,0.28);
-  margin-bottom:28px;
-}
-
-.cover-title{
-  font-family:'Titan One',cursive;
-  font-size:88px;
-  line-height:.88;
-  color:#f2c14e;
-  text-align:center;
-  letter-spacing:-1px;
-  text-shadow:2px 4px 0 rgba(0,0,0,0.22);
-  margin-bottom:18px;
-}
-
-.cover-tagline{
-  font-size:13px;
-  letter-spacing:5px;
-  text-transform:uppercase;
-  color:#5b96bf;
-  text-align:center;
-  margin-bottom:36px;
-}
-
-.cover-rule{
-  width:56px;
-  height:3px;
-  border-radius:2px;
-  background:#f2c14e;
-  opacity:.5;
-  margin-bottom:36px;
-}
-
-.cover-contact{
-  text-align:center;
-  color:rgba(255,255,255,.88);
-  font-size:15px;
-  line-height:2;
-  margin-bottom:28px;
-}
-.cover-contact strong{color:#f2c14e;font-size:18px}
-.cover-contact .web{color:#5b96bf;font-size:13px}
-
-.cover-box{
-  background:rgba(0,0,0,.18);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:14px;
-  padding:18px 26px;
-  max-width:340px;
-  color:rgba(255,255,255,.72);
-  font-size:13px;
-  text-align:center;
-  line-height:1.75;
-}
-
-/* ── Content ── */
-.content{
-  width:210mm;
-  min-height:297mm;
-  background:#fdfbf6;
-}
-
-.pg-hdr{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10mm 14mm 4mm;
-  border-bottom:2.5px solid #1d5e8c;
-}
-.pg-logo{
-  width:28px;height:28px;
-  border-radius:50%;
-  object-fit:cover;
-  border:1.5px solid #f2c14e;
-}
-.pg-brand{
-  font-family:'Titan One',cursive;
-  font-size:15px;
-  color:#1d5e8c;
-}
-.pg-date{
-  margin-left:auto;
-  font-size:10px;
-  color:#9ca3af;
-}
-
-.pg-body{padding:7mm 14mm}
-
-/* ── Category ── */
-.cat{margin-bottom:7mm;break-inside:avoid}
-
-.cat-hdr{
-  font-family:'Titan One',cursive;
-  font-size:14px;
-  letter-spacing:.4px;
-  background:#1d5e8c;
-  color:#f2c14e;
-  padding:7px 12px;
-  border-radius:6px 6px 0 0;
-}
-
-.cat-items{
-  border:1.5px solid #e5e7eb;
-  border-top:none;
-  border-radius:0 0 6px 6px;
-  overflow:hidden;
-}
-
-/* ── Item ── */
-.item{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-  padding:6px 12px;
-  border-bottom:1px solid #f3f4f6;
-}
-.item:last-child{border-bottom:none}
-.item:nth-child(even){background:rgba(29,94,140,.03)}
-
-.item-body{flex:1;min-width:0}
-
-.item-name{
-  font-size:12.5px;
-  font-weight:600;
-  color:#1c2b36;
-  line-height:1.3;
-}
-
-.mod{
-  font-size:10.5px;
-  color:#6b7280;
-  margin-top:2px;
-  font-style:italic;
-}
-.req{color:#f2c14e}
-.opt{color:#9ca3af}
-
-.notes{
-  font-size:10px;
-  color:#9ca3af;
-  font-style:italic;
-  margin-top:1px;
-}
-
-.item-prices{
-  text-align:right;
-  flex-shrink:0;
-  white-space:nowrap;
-}
-.price{
-  font-size:12.5px;
-  font-weight:700;
-  color:#1d5e8c;
-}
-.price-old{
-  font-size:10px;
-  color:#9ca3af;
-  text-decoration:line-through;
-}
-
-/* ── Footer ── */
-.footer{
-  margin:6mm 14mm 10mm;
-  padding:10px 16px;
-  background:#1d5e8c;
-  border-radius:8px;
-  color:rgba(255,255,255,.88);
-  font-size:11px;
-  text-align:center;
-  line-height:1.65;
-}
-.footer b{color:#f2c14e}
-
-/* ── Screen ── */
-@media screen{
-  body{
-    display:flex;flex-direction:column;
-    align-items:center;gap:28px;padding:28px;
-  }
-  .cover,.content{box-shadow:0 8px 40px rgba(0,0,0,.14)}
-}
-@media print{
-  body{background:#fff;gap:0;padding:0}
-  .cover,.content{box-shadow:none}
-}
-</style>
-</head>
-<body>
-
-<!-- PORTADA -->
-<div class="cover">
-  <div class="tile"></div>
-
-  <div class="cover-body">
-    <img src="${logo}" class="cover-logo" alt="Celestina Cocina" onerror="this.style.display='none'">
-
-    <div class="cover-title">CELESTINA<br>COCINA</div>
-    <div class="cover-tagline">pastas artesanales &middot; Caaguaz&uacute;, Paraguay</div>
-
-    <div class="cover-rule"></div>
-
-    <div class="cover-contact">
-      Para hacer tu pedido:<br>
-      <strong>&#128241; WhatsApp${whatsapp ? `<br>${whatsapp}` : ''}</strong><br>
-      <span class="web">&#127760; celestina-cocina.vercel.app</span>
-    </div>
-
-    <div class="cover-box">
-      Eleg&iacute; lo que quer&eacute;s, anotá el nombre del plato y la cantidad, y escribinos por WhatsApp con tu nombre y direcci&oacute;n de entrega. ¡Te confirmamos el pedido enseguida!
-    </div>
-  </div>
-
-  <div class="tile"></div>
-</div>
-
-<!-- CONTENIDO -->
-<div class="content">
-  <div class="pg-hdr">
-    <img src="${logo}" class="pg-logo" alt="" onerror="this.style.display='none'">
-    <span class="pg-brand">Celestina Cocina</span>
-    <span class="pg-date">Carta &middot; ${fecha}</span>
-  </div>
-
-  <div class="pg-body">
-    ${catBlocks}
-  </div>
-
-  <div class="footer">
-    ${contactLine}<br>
-    Enviá el detalle de tu pedido con nombre y direcci&oacute;n de entrega
-  </div>
-</div>
-
-</body>
-</html>`
-}
-
-// ── Componente ───────────────────────────────────────────────────────────────
+// ── Página admin ──────────────────────────────────────────────────────────────
 
 export default function CartaMenuPage() {
   const { data: categories = [], isLoading } = useMenu()
   const { data: config } = useConfig()
   const [generating, setGenerating] = useState(false)
 
-  const activeCategories = categories.filter(c => c.active)
-  const totalItems = activeCategories.reduce(
-    (sum, c) => sum + (c.items ?? []).filter(i => i.available).length,
+  const logoUrl = `${window.location.origin}/logo-celestina.jpg`
+
+  const activeCats = categories.filter(c => c.active)
+  const totalItems = activeCats.reduce(
+    (n, c) => n + (c.items ?? []).filter(i => i.available).length,
     0,
   )
 
-  const cartaHTML = useMemo(
-    () => categories.length
-      ? buildCartaHTML({ categories, config, origin: window.location.origin })
-      : null,
-    [categories, config],
+  const docProps = useMemo(
+    () => ({ categories, config, logoUrl }),
+    [categories, config, logoUrl],
   )
 
-  function handleGenerate() {
-    if (!cartaHTML) return
+  async function handleDownload() {
+    if (!categories.length) return
     setGenerating(true)
-    const win = window.open('', '_blank', 'width=960,height=800')
-    if (!win) {
-      toast.error('Habilitá las ventanas emergentes para generar el PDF')
+    try {
+      const blob = await pdf(<CartaDocument {...docProps} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'celestina-cocina-carta.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      toast.error('No se pudo generar el PDF')
+      console.error(e)
+    } finally {
       setGenerating(false)
-      return
     }
-    win.document.open()
-    win.document.write(cartaHTML)
-    win.document.close()
-    win.onload = () => {
-      win.focus()
-      // Esperar fuentes antes de imprimir
-      win.document.fonts?.ready
-        .then(() => win.print())
-        .catch(() => win.print())
-    }
-    setGenerating(false)
   }
 
   return (
     <div className="p-5 max-w-2xl mx-auto">
       <h1 className="font-display font-bold text-2xl mb-1" style={{ color: '#1c2b36' }}>
-        Carta para PDF
+        Carta PDF
       </h1>
       <p className="text-xs mb-6" style={{ color: '#9ca3af' }}>
-        Genera la carta completa del menú activo para compartir por WhatsApp o imprimir en papel.
+        Descargá la carta del menú activo para compartir por WhatsApp o imprimir.
       </p>
 
       {/* Resumen de contenido */}
       {!isLoading && (
-        <div className="rounded-2xl p-5 mb-5" style={{ background: '#fff', border: '1px solid #e5e7eb' }}>
+        <div
+          className="rounded-2xl p-5 mb-5"
+          style={{ background: '#fff', border: '1px solid #e5e7eb' }}
+        >
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -438,17 +339,16 @@ export default function CartaMenuPage() {
             </div>
             <div>
               <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>
-                {activeCategories.length} categorías · {totalItems} platos activos
+                {activeCats.length} categorías · {totalItems} platos activos
               </p>
               <p className="text-xs" style={{ color: '#9ca3af' }}>
                 Solo se incluyen categorías e ítems visibles en el menú
               </p>
             </div>
           </div>
-
           <div className="flex flex-col gap-2">
-            {activeCategories.map(cat => {
-              const count = (cat.items ?? []).filter(i => i.available).length
+            {activeCats.map(cat => {
+              const n = (cat.items ?? []).filter(i => i.available).length
               return (
                 <div key={cat.id} className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#374151' }}>{cat.name}</span>
@@ -456,7 +356,7 @@ export default function CartaMenuPage() {
                     className="text-xs px-2 py-0.5 rounded-full font-semibold"
                     style={{ background: '#eaf3f8', color: '#1d5e8c' }}
                   >
-                    {count} {count === 1 ? 'plato' : 'platos'}
+                    {n} {n === 1 ? 'plato' : 'platos'}
                   </span>
                 </div>
               )
@@ -471,26 +371,24 @@ export default function CartaMenuPage() {
         </div>
       )}
 
-      {/* Botón principal */}
+      {/* Botón de descarga */}
       <button
-        onClick={handleGenerate}
-        disabled={isLoading || generating || !cartaHTML}
+        onClick={handleDownload}
+        disabled={isLoading || generating || !categories.length}
         className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity hover:opacity-90"
         style={{ background: '#1d5e8c', color: '#fff' }}
       >
         {generating
-          ? <><Loader2 size={18} className="animate-spin" /> Generando…</>
-          : <><FileText size={18} /> Generar PDF</>
+          ? <><Loader2 size={18} className="animate-spin" /> Generando PDF…</>
+          : <><FileText size={18} /> Descargar carta.pdf</>
         }
       </button>
-
-      <p className="text-xs text-center mt-3" style={{ color: '#9ca3af' }}>
-        Se abrirá una vista previa. En el diálogo elegí{' '}
-        <strong style={{ color: '#374151' }}>"Guardar como PDF"</strong> como destino.
+      <p className="text-xs text-center mt-2" style={{ color: '#9ca3af' }}>
+        Descarga directa · texto seleccionable · sin diálogo de impresión
       </p>
 
-      {/* Vista previa en iframe */}
-      {cartaHTML && (
+      {/* Preview en iframe */}
+      {!isLoading && categories.length > 0 && (
         <div className="mt-6">
           <p
             className="text-xs font-bold uppercase tracking-wider mb-2"
@@ -500,17 +398,35 @@ export default function CartaMenuPage() {
           </p>
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ border: '1px solid #e5e7eb', height: 520 }}
+            style={{ border: '1px solid #e5e7eb', height: 540 }}
           >
-            <iframe
-              srcDoc={cartaHTML}
-              title="Vista previa de la carta"
-              style={{ width: '100%', height: '100%', border: 'none' }}
-            />
+            <BlobProvider document={<CartaDocument {...docProps} />}>
+              {({ url, loading, error }) => {
+                if (loading) return (
+                  <div
+                    className="h-full flex items-center justify-center"
+                    style={{ background: '#f9fafb' }}
+                  >
+                    <Loader2 size={20} className="animate-spin" style={{ color: '#1d5e8c' }} />
+                  </div>
+                )
+                if (error || !url) return (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-xs" style={{ color: '#9ca3af' }}>
+                      Preview no disponible — usá el botón de descarga
+                    </p>
+                  </div>
+                )
+                return (
+                  <iframe
+                    src={url}
+                    title="Vista previa de la carta"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                )
+              }}
+            </BlobProvider>
           </div>
-          <p className="text-xs text-center mt-2" style={{ color: '#9ca3af' }}>
-            Podés scrollear en la preview para ver todo el contenido
-          </p>
         </div>
       )}
     </div>
