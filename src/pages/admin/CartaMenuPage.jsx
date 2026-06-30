@@ -65,6 +65,7 @@ const S = StyleSheet.create({
   logo: {
     width: 40,
     height: 40,
+    borderRadius: 20,
   },
   headerCenter: {
     flex: 1,
@@ -300,7 +301,7 @@ export default function CartaMenuPage() {
   const { data: config } = useConfig()
   const [generating, setGenerating] = useState(false)
 
-  const logoUrl = `${window.location.origin}/logo_v2.jpeg`
+  const logoUrl = `${window.location.origin}/logo-source.png`
 
   const activeCats = categories.filter(c => c.active)
   const totalItems = activeCats.reduce(
