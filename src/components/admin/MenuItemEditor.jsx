@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { formatPrice, calcDiscountedPrice } from '../../lib/utils'
+import { useModifierGroups } from '../../hooks/useModifiers'
 
 const schema = z.object({
   name:         z.string().min(2, 'Requerido'),
@@ -29,6 +30,21 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
   const [previewUrl, setPreviewUrl] = useState(item?.image_url ?? null)
   const [imageUrl, setImageUrl] = useState(item?.image_url ?? null)
   const fileRef = useRef()
+
+  const { data: allGroups = [] } = useModifierGroups()
+  const [selectedGroupIds, setSelectedGroupIds] = useState([])
+
+  // Cargar grupos vinculados al plato existente
+  useEffect(() => {
+    if (!item?.id) return
+    supabase
+      .from('menu_item_modifier_groups')
+      .select('modifier_group_id')
+      .eq('menu_item_id', item.id)
+      .then(({ data }) => {
+        setSelectedGroupIds((data ?? []).map(r => r.modifier_group_id))
+      })
+  }, [item?.id])
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch } = useForm({
     resolver: zodResolver(schema),
@@ -114,7 +130,17 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
       toast.error('No se pudo guardar.')
       return
     }
+
+    // Sincronizar vínculos con grupos de opciones
+    await supabase.from('menu_item_modifier_groups').delete().eq('menu_item_id', itemId)
+    if (selectedGroupIds.length > 0) {
+      await supabase.from('menu_item_modifier_groups').insert(
+        selectedGroupIds.map(gid => ({ menu_item_id: itemId, modifier_group_id: gid }))
+      )
+    }
+
     queryClient.invalidateQueries({ queryKey: ['menu'] })
+    queryClient.invalidateQueries({ queryKey: ['modifier-groups'] })
     toast.success(isCreate ? 'Plato creado' : 'Plato actualizado')
     onClose()
   }
@@ -220,6 +246,50 @@ export default function MenuItemEditor({ item = null, categoryId = null, sortOrd
               <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Notas (presentación, tiempo, etc.)</label>
               <input {...register('notes')} className="w-full border rounded-xl px-3 py-2.5 text-sm outline-none" style={{ borderColor: '#e5e7eb', fontFamily: 'inherit' }} />
             </div>
+
+            {/* Grupos de opciones */}
+            {allGroups.length > 0 && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#1d5e8c' }}>Grupos de opciones</label>
+                <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>
+                  El cliente elegirá entre estas opciones al agregar el plato al carrito.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {allGroups.map(group => {
+                    const checked = selectedGroupIds.includes(group.id)
+                    return (
+                      <label
+                        key={group.id}
+                        className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
+                        style={{
+                          border: `1.5px solid ${checked ? '#1d5e8c' : '#e5e7eb'}`,
+                          background: checked ? '#eaf3f8' : '#fff',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={e => {
+                            if (e.target.checked) setSelectedGroupIds(prev => [...prev, group.id])
+                            else setSelectedGroupIds(prev => prev.filter(id => id !== group.id))
+                          }}
+                          className="mt-0.5 w-4 h-4 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: '#1c2b36' }}>{group.name}</p>
+                          <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>
+                            {group.required ? 'Obligatorio' : 'Opcional'} · {group.selection_type === 'single' ? 'Una opción' : 'Varias'}
+                          </p>
+                          <p className="text-xs mt-1 truncate" style={{ color: '#9ca3af' }}>
+                            {group.modifiers.map(m => m.name).join(', ')}
+                          </p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
