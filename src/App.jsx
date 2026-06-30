@@ -7,10 +7,11 @@ import DashboardPage from './pages/admin/DashboardPage'
 import OrdersPage from './pages/admin/OrdersPage'
 import MenuAdminPage from './pages/admin/MenuAdminPage'
 import ComplementosPage from './pages/admin/ComplementosPage'
-// Carga diferida: arrastran html-to-image / Google Maps, fuera del bundle del menú público.
-const FlyersPage   = lazy(() => import('./pages/admin/FlyersPage'))
-const ConfigPage   = lazy(() => import('./pages/admin/ConfigPage'))
-const NewOrderPage = lazy(() => import('./pages/admin/NewOrderPage'))
+// Carga diferida: arrastran html-to-image / Google Maps / generadores, fuera del bundle del menú público.
+const FlyersPage      = lazy(() => import('./pages/admin/FlyersPage'))
+const CartaMenuPage   = lazy(() => import('./pages/admin/CartaMenuPage'))
+const ConfigPage      = lazy(() => import('./pages/admin/ConfigPage'))
+const NewOrderPage    = lazy(() => import('./pages/admin/NewOrderPage'))
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="menu"          element={<MenuAdminPage />} />
           <Route path="complementos"  element={<ComplementosPage />} />
           <Route path="flyers"        element={<Suspense fallback={null}><FlyersPage /></Suspense>} />
+          <Route path="carta"         element={<Suspense fallback={null}><CartaMenuPage /></Suspense>} />
           <Route path="configuracion" element={<Suspense fallback={null}><ConfigPage /></Suspense>} />
           <Route path="nuevo-pedido"  element={<Suspense fallback={null}><NewOrderPage /></Suspense>} />
         </Route>
