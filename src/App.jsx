@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { Analytics } from '@vercel/analytics/react'
 import MenuPage from './pages/MenuPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="nuevo-pedido"  element={<Suspense fallback={null}><NewOrderPage /></Suspense>} />
         </Route>
       </Routes>
+      <Analytics />
     </BrowserRouter>
   )
 }
