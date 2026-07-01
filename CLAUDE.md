@@ -255,9 +255,14 @@ El resto de las categorías (Pastas Congeladas, Salsas Congeladas, Focaccias, Gu
   - `logo-source.png` (1024×1024) copiado a `public/` para que sea accesible como URL estática en el PDF.
   - Titan One agregado al `<link>` de Google Fonts en `index.html` para disponibilidad en html-to-image también.
 - **Flyer "Texto Hero"** (`src/components/admin/flyers/TextHeroFlyer.jsx`): tercera plantilla en `/admin/flyers`. Foto del plato como fondo full-bleed → overlay azul de marca semitransparente → patrón SVG de rombos → texto gigante Titan One blanco centrado → degradados top/bottom → logo medallón → precio en amarillo. `autoSplitHeroName()` divide palabras largas en chunks de ~4 chars (ej: TAGLIATELLES → TAG/LIA/TEL/LES → font 380px en vez de 126px). `calcFontSize()` adapta el tamaño a la línea más larga. Campo `<textarea>` en FlyersPage: cada línea = una línea gigante, editable manualmente.
-- **Sticky bottom nav en menú público** (`src/components/menu/MenuBottomNav.jsx`): pill flotante oscuro centrado, solo mobile. 5 íconos en amarillo (#f2c14e): Inicio (scroll top) / Menú (scroll primera categoría) / Carrito (con badge de cantidad) / WhatsApp / Ayuda (modal cómo pedir). Reemplazó el botón "Truck" suelto que había en esquina inferior izquierda. `CartFloating` sube a `bottom: 5.5rem` para aparecer encima del nav sin solaparse.
 - **@vercel/analytics**: instalado. `<Analytics />` de `@vercel/analytics/react` (no `/next` — este es Vite SPA) montado en `App.jsx` dentro del `BrowserRouter` para capturar navegaciones SPA automáticamente.
 - **README.md**: reemplazado el default de Vite con documentación real del proyecto (stack, funcionalidades, modelo de datos, variables de entorno, scripts, estructura de directorios).
+
+## Implementado (sesión 2026-07-01)
+
+- **Fix: el sticky bottom nav era para el admin, no para el menú público.** La sesión anterior había creado `MenuBottomNav.jsx` y lo puso en el menú público por error — el bottom nav de 5 íconos siempre fue pensado para el back office (existía ahí antes, se había sacado al pasar a hamburger-only). Corregido:
+  - **Menú público**: se eliminó `MenuBottomNav.jsx` y se restauró el botón flotante "¿Cómo pedir?" (ícono Truck, esquina inferior izquierda) y el `CartFloating` con `bottom: 1rem` (estado previo a la sesión 2026-06-30).
+  - **Admin** (`AdminLayout.jsx`): recupera el bottom nav mobile, pero sin repetir el problema original de 6-7 destinos apretados. 3 tabs directos de uso diario — Resumen / Pedidos / Menú (`NAV_PRIMARY`) — + un 4º tab "Más" (ícono `MoreHorizontal`) que abre el drawer ya existente con el resto (Complementos / Flyers / Carta PDF / Config + logout, `NAV_MORE`). El hamburger del topbar mobile se sacó (redundante con "Más"). Mismos colores que el resto del admin: navy `#1c2b36`, activo amarillo `#f2c14e` con pill `rgba(242,193,78,0.12)`, inactivo `#94a3b8`. Padding-bottom del contenido con `env(safe-area-inset-bottom)` vía clase Tailwind arbitraria (no inline style, para que `md:pb-0` pueda pisarlo en desktop).
 
 ## Pendientes / decisiones abiertas
 
