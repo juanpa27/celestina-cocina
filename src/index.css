@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Titan One autohospedada (mismo origen) — evita el bloqueo CORS que
+   impedía a html-to-image embeber la fuente de Google Fonts en los
+   flyers exportados, tanto en desktop como en mobile/Safari. */
+@font-face {
+  font-family: "Titan One";
+  src: url("/fonts/titan-one.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Colores Celestina */
   --color-celestina-azul: #1d5e8c;

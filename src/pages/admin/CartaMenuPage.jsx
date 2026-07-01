@@ -13,7 +13,7 @@ import { calcDiscountedPrice } from '../../lib/utils'
 
 Font.register({
   family: 'TitanOne',
-  src: 'https://fonts.gstatic.com/s/titanone/v17/mFTzWbsGxbbS_J5cQcjykw.ttf',
+  src: '/fonts/titan-one.ttf',
 })
 
 // Sin hifenación — los nombres de platos no deben cortarse
