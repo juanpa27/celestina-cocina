@@ -8,10 +8,9 @@ import ModifierModal from '../components/menu/ModifierModal'
 import HowToOrderModal from '../components/menu/HowToOrderModal'
 import CartSidebar from '../components/cart/CartSidebar'
 import CartFloating from '../components/cart/CartFloating'
-import MenuBottomNav from '../components/menu/MenuBottomNav'
 import AzulejoStrip from '../components/ui/AzulejoStrip'
 import ClosedBanner from '../components/ui/ClosedBanner'
-import { ShoppingBag, MessageCircle, Search } from 'lucide-react'
+import { Truck, ShoppingBag, MessageCircle, Search } from 'lucide-react'
 
 const HOW_TO_STEPS = [
   { num: '1', Icon: Search,       label: 'Elegí tus platos',        color: '#1d5e8c' },
@@ -64,12 +63,6 @@ export default function MenuPage() {
     }
   }
 
-  function handleScrollMenu() {
-    const first = categories?.[0]
-    if (!first) return
-    handleTabSelect(first.id)
-  }
-
   return (
     <div className="min-h-screen bg-celestina-crema">
       <MenuHeader />
@@ -88,7 +81,7 @@ export default function MenuPage() {
 
       {/* Layout principal */}
       <div
-        className="flex gap-7 px-5 pb-36 md:pb-10 items-start"
+        className="flex gap-7 px-5 pb-24 md:pb-10 items-start"
         style={{ maxWidth: 1100, margin: '0 auto' }}
       >
         <main className="flex-1 min-w-0">
@@ -224,16 +217,18 @@ export default function MenuPage() {
         </div>
       </footer>
 
-      {/* Floating cart — sube por encima del nav en mobile */}
+      {/* Floating cart — solo mobile, oculto si el negocio está cerrado */}
       {isOpen && <CartFloating onOpen={() => setCartOpen(true)} />}
 
-      {/* Sticky bottom nav — solo mobile */}
-      <MenuBottomNav
-        onScrollTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        onScrollMenu={handleScrollMenu}
-        onCartOpen={() => setCartOpen(true)}
-        onHowToOpen={() => setHowToOpen(true)}
-      />
+      {/* Botón flotante ¿Cómo pedir? — mobile, esquina inferior izquierda, solo ícono */}
+      <button
+        onClick={() => setHowToOpen(true)}
+        className="fixed z-30 md:hidden w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg"
+        style={{ bottom: 20, left: 16, background: '#1d5e8c', boxShadow: '0 4px 16px rgba(29,94,140,0.35)' }}
+        aria-label="¿Cómo pedir?"
+      >
+        <Truck size={20} strokeWidth={2} />
+      </button>
 
       {/* Modal de modificadores */}
       {modifierItem && (

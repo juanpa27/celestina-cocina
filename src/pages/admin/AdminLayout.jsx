@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, SlidersHorizontal, Images, BookOpen, Settings, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, SlidersHorizontal, Images, BookOpen, Settings, LogOut, MoreHorizontal, X } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import LoginPage from './LoginPage'
 
@@ -13,6 +13,12 @@ const NAV = [
   { to: '/admin/carta',         icon: BookOpen,           label: 'Carta PDF' },
   { to: '/admin/configuracion', icon: Settings,           label: 'Config' },
 ]
+
+// Tabs con acceso directo desde el bottom nav mobile — las 3 pantallas de uso diario.
+// El resto vive detrás del tab "Más" para no repetir el problema del bottom nav
+// viejo (6-7 destinos apretados sin aire).
+const NAV_PRIMARY = NAV.slice(0, 3)
+const NAV_MORE = NAV.slice(3)
 
 export default function AdminLayout() {
   const { session, loading, user, signOut } = useAuth()
@@ -29,6 +35,8 @@ export default function AdminLayout() {
   }
 
   if (!session) return <LoginPage />
+
+  const isMoreActive = NAV_MORE.some(({ to }) => location.pathname.startsWith(to))
 
   return (
     <div className="min-h-screen flex" style={{ background: '#f9fafb' }}>
@@ -82,7 +90,7 @@ export default function AdminLayout() {
 
       {/* ── Topbar mobile ── */}
       <div
-        className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4"
+        className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center px-4"
         style={{
           background: '#1c2b36',
           height: '52px',
@@ -95,13 +103,6 @@ export default function AdminLayout() {
           </div>
           <p className="font-display font-bold text-white text-sm">Celestina · Admin</p>
         </div>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="p-2 rounded-xl transition-colors hover:bg-white/10"
-          aria-label="Abrir menú"
-        >
-          <Menu size={22} style={{ color: '#94a3b8' }} />
-        </button>
       </div>
 
       {/* ── Overlay del drawer ── */}
@@ -147,9 +148,9 @@ export default function AdminLayout() {
           </button>
         </div>
 
-        {/* Drawer nav */}
+        {/* Drawer nav — solo los destinos que no están en el bottom nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-auto">
-          {NAV.map(({ to, icon: Icon, label }) => (
+          {NAV_MORE.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -183,8 +184,55 @@ export default function AdminLayout() {
         </div>
       </div>
 
+      {/* ── Bottom nav mobile ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch"
+        style={{
+          background: '#1c2b36',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+        {NAV_PRIMARY.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold transition-colors active:scale-95"
+            style={({ isActive }) => ({ color: isActive ? '#f2c14e' : '#94a3b8' })}
+          >
+            {({ isActive }) => (
+              <>
+                <div
+                  className="flex items-center justify-center w-10 h-7 rounded-xl transition-colors"
+                  style={{ background: isActive ? 'rgba(242,193,78,0.12)' : 'transparent' }}
+                >
+                  <Icon size={20} />
+                </div>
+                {label}
+              </>
+            )}
+          </NavLink>
+        ))}
+
+        {/* Más — abre el drawer con el resto de las secciones */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold transition-colors active:scale-95"
+          style={{ color: isMoreActive ? '#f2c14e' : '#94a3b8' }}
+          aria-label="Más opciones"
+        >
+          <div
+            className="flex items-center justify-center w-10 h-7 rounded-xl transition-colors"
+            style={{ background: isMoreActive ? 'rgba(242,193,78,0.12)' : 'transparent' }}
+          >
+            <MoreHorizontal size={20} />
+          </div>
+          Más
+        </button>
+      </nav>
+
       {/* ── Contenido ── */}
-      <main className="flex-1 min-w-0 pt-[52px] md:pt-0 overflow-auto">
+      <main className="flex-1 min-w-0 pt-[52px] md:pt-0 pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-auto">
         <Outlet />
       </main>
     </div>
