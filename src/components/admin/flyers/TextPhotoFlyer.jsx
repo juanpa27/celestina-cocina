@@ -64,17 +64,23 @@ export default function TextPhotoFlyer({ item, displayName, photoUrl }) {
         ))}
       </div>
 
-      {/* ── Capa 4: foto flotante centrada, tapa el texto del medio ── */}
+      {/* ── Capa 4: foto en tarjeta, centrada sobre el texto del medio ──
+          Un fundido/máscara translúcida se ve mal con fotos de estudio de
+          fondo blanco (deja un halo claro tipo caja, no funde con el azul).
+          En vez de simularlo, se enmarca con borde+sombra netos: sin zona
+          semitransparente, cero halo, sirve cualquier foto tal cual. */}
       {photoUrl && (
         <div style={{
           position: 'absolute',
-          top: '35%',
+          top: '36%',
           left: '50%',
-          transform: 'translateX(-50%)',
-          width: 660,
-          height: 760,
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)',
+          transform: 'translate(-50%, -50%)',
+          width: 620,
+          height: 700,
+          borderRadius: 36,
+          overflow: 'hidden',
+          border: `10px solid ${C.amarillo}`,
+          boxShadow: '0 30px 70px rgba(2,10,20,0.55)',
         }}>
           <img
             src={photoUrl}
