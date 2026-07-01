@@ -24,14 +24,14 @@ export function autoSplitHeroName(name) {
 
 // Font-size que hace que la línea más larga llene aprox el ancho útil.
 // Titan One: ~0.63 de ancho por char a 1em.
-function calcFontSize(lines) {
+export function calcFontSize(lines) {
   const maxLen = Math.max(...lines.map(l => l.length), 1)
   const available = FLYER_W - 80  // 40px padding cada lado
   return Math.min(380, Math.max(100, Math.floor(available / (maxLen * 0.63))))
 }
 
 // Patrón de rombos SVG — más liviano que muchos polígonos
-function DiamondPattern() {
+export function DiamondPattern() {
   const S = 100
   const cols = Math.ceil(FLYER_W / S) + 2
   const rows = Math.ceil(FLYER_H / S) + 2
