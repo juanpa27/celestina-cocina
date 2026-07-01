@@ -64,29 +64,30 @@ export default function TextPhotoFlyer({ item, displayName, photoUrl }) {
         ))}
       </div>
 
-      {/* ── Capa 4: foto en tarjeta, centrada sobre el texto del medio ──
-          Un fundido/máscara translúcida se ve mal con fotos de estudio de
-          fondo blanco (deja un halo claro tipo caja, no funde con el azul).
-          En vez de simularlo, se enmarca con borde+sombra netos: sin zona
-          semitransparente, cero halo, sirve cualquier foto tal cual. */}
+      {/* ── Capa 4: foto sin fondo, flotando libre sobre el texto del medio ──
+          La foto ya viene recortada (fondo transparente, ver FlyersPage) antes
+          de llegar acá, así que se apoya tal cual, sin marco ni caja — solo
+          la silueta del plato queda opaca, igual que en la referencia. */}
       {photoUrl && (
         <div style={{
           position: 'absolute',
-          top: '36%',
+          top: '38%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 620,
-          height: 700,
-          borderRadius: 36,
-          overflow: 'hidden',
-          border: `10px solid ${C.amarillo}`,
-          boxShadow: '0 30px 70px rgba(2,10,20,0.55)',
+          width: 720,
+          height: 780,
         }}>
+          {/* Sin crossOrigin: la foto siempre es un blob: local (subida + recortada
+              en el navegador), nunca una URL remota — pedir CORS ahí rompe la carga. */}
           <img
             src={photoUrl}
-            crossOrigin="anonymous"
             alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 24px 34px rgba(2,10,20,0.55))',
+            }}
           />
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect, useMemo, useEffect } from 'react'
+import { useState, useRef, useLayoutEffect, useMemo } from 'react'
 import { Download, Loader2, UtensilsCrossed, LayoutGrid, Type, ImagePlus, Upload, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
@@ -17,26 +17,45 @@ export default function FlyersPage() {
   const [displayName, setDisplayName] = useState('')
   const [format, setFormat] = useState('webp')    // 'webp' | 'jpg'
   const [exporting, setExporting] = useState(false)
-  const [photoUrl, setPhotoUrl] = useState(null)  // foto libre subida para el modo "phototext" (blob: URL local)
+  const [photoUrl, setPhotoUrl] = useState(null)  // foto libre subida para el modo "phototext", ya sin fondo (data: URL)
+  const [removingBg, setRemovingBg] = useState(false)
   const photoInputRef = useRef(null)
 
   const flyerRef = useRef(null)
   const boxRef = useRef(null)
   const [scale, setScale] = useState(0.33)
 
-  // La URL del blob solo vive en memoria del navegador — liberarla al cambiar/desmontar.
-  useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
-
-  function handlePhotoChange(e) {
+  // Le saca el fondo a la foto en el momento (IA corriendo en el navegador, nada
+  // se sube a un servidor) para que quede flotando libre sobre el texto, sin
+  // rectángulo ni halo — carga la librería recién cuando hace falta porque
+  // el modelo pesa unos MB y solo lo usa este modo puntual.
+  async function handlePhotoChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (photoUrl) URL.revokeObjectURL(photoUrl)
-    setPhotoUrl(URL.createObjectURL(file))
     e.target.value = ''
+    setRemovingBg(true)
+    try {
+      const { removeBackground } = await import('@imgly/background-removal')
+      const cutout = await removeBackground(file)
+      // data: URL, no blob: — el export (html-to-image con cacheBust) le agrega
+      // un query string a la URL de la imagen antes de re-fetchearla, y eso
+      // invalida una blob: URL (es un ID exacto, no tolera sufijos).
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(cutout)
+      })
+      setPhotoUrl(dataUrl)
+    } catch (err) {
+      console.error(err)
+      toast.error('No se pudo recortar el fondo de la foto.')
+    } finally {
+      setRemovingBg(false)
+    }
   }
 
   function removePhoto() {
-    if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(null)
   }
 
@@ -170,25 +189,33 @@ export default function FlyersPage() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => photoInputRef.current?.click()}
+                  onClick={() => !removingBg && photoInputRef.current?.click()}
+                  disabled={removingBg}
                   className="relative flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center"
-                  style={{ width: 64, height: 64, background: '#eaf3f8', border: '1.5px dashed #5b96bf' }}
+                  style={{
+                    width: 64, height: 64,
+                    background: photoUrl ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Crect width='6' height='6' fill='%23e5e7eb'/%3E%3Crect x='6' y='6' width='6' height='6' fill='%23e5e7eb'/%3E%3C/svg%3E\")" : '#eaf3f8',
+                    border: '1.5px dashed #5b96bf',
+                  }}
                 >
-                  {photoUrl
-                    ? <img src={photoUrl} alt="" className="w-full h-full object-cover" />
-                    : <Upload size={20} style={{ color: '#1d5e8c' }} />
+                  {removingBg
+                    ? <Loader2 size={20} className="animate-spin" style={{ color: '#1d5e8c' }} />
+                    : photoUrl
+                      ? <img src={photoUrl} alt="" className="w-full h-full object-contain" />
+                      : <Upload size={20} style={{ color: '#1d5e8c' }} />
                   }
                 </button>
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="text-sm font-bold text-left"
+                    onClick={() => !removingBg && photoInputRef.current?.click()}
+                    disabled={removingBg}
+                    className="text-sm font-bold text-left disabled:opacity-60"
                     style={{ color: '#1d5e8c' }}
                   >
-                    {photoUrl ? 'Cambiar foto' : 'Subir foto'}
+                    {removingBg ? 'Recortando fondo…' : photoUrl ? 'Cambiar foto' : 'Subir foto'}
                   </button>
-                  {photoUrl && (
+                  {photoUrl && !removingBg && (
                     <button type="button" onClick={removePhoto} className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#7c8a93' }}>
                       <X size={12} /> Quitar
                     </button>
@@ -197,7 +224,7 @@ export default function FlyersPage() {
                 <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               </div>
               <p className="text-xs mt-1.5" style={{ color: '#7c8a93' }}>
-                Cualquier foto sirve (no hace falta recorte especial) — va centrada y con los bordes difuminados sobre el texto.
+                Le sacamos el fondo automáticamente (unos segundos) para que quede flotando libre sobre el texto, como en la referencia.
               </p>
             </Field>
           )}
