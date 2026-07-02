@@ -1,11 +1,13 @@
+import { useRef, useState, useLayoutEffect } from 'react'
 import { formatPrice, calcDiscountedPrice } from '../../../lib/utils'
-import { FLYER_W } from '../../../lib/flyer'
+import { FLYER_W, FLYER_H } from '../../../lib/flyer'
 import { C } from './flyerChrome'
 
-// Menú completo para postear como estado de WhatsApp: TODOS los platos activos
-// (sin bebidas), con los colores y la tipografía de la carta (crema + azul +
-// azulejo amarillo, Fraunces / DM Sans). Ancho fijo 1080; la altura crece con
-// el contenido.
+// Menú completo para postear como estado/historia de WhatsApp: TODOS los platos
+// activos (sin bebidas), con los colores y la tipografía de la carta (crema +
+// azul + azulejo amarillo, Fraunces / DM Sans). Lienzo fijo 1080×1920 (9:16)
+// para que entre exacto en un estado sin barras negras — el cuerpo se auto-
+// escala para que todos los platos quepan en el alto disponible.
 
 const CARD_W = (FLYER_W - 96 - 30) / 2   // padding 48*2, gap 30
 
@@ -88,29 +90,45 @@ export default function MenuStatusFlyer({ categories }) {
     .map(c => ({ ...c, items: (c.items ?? []).filter(i => i.available !== false) }))
     .filter(c => c.items.length)
 
-  return (
-    <div style={{ width: FLYER_W, background: C.crema, fontFamily: 'DM Sans, sans-serif', overflow: 'hidden' }}>
+  // Auto-fit: escala el cuerpo para que todos los platos entren en el alto
+  // disponible del lienzo 9:16. Las alturas son fijas (foto 250px), así que no
+  // hace falta re-medir cuando cargan las imágenes.
+  const bodyRef = useRef(null)
+  const contentRef = useRef(null)
+  const [scale, setScale] = useState(1)
 
-      {/* Header */}
-      <div style={{ background: C.azul, padding: '52px 48px 44px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    const content = contentRef.current
+    if (!body || !content) return
+    const avail = body.clientHeight
+    const natural = content.scrollHeight
+    setScale(natural > avail ? avail / natural : 1)
+  }, [categories])
+
+  return (
+    <div style={{ width: FLYER_W, height: FLYER_H, background: C.crema, fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Header — logo a la izquierda */}
+      <div style={{ background: C.azul, padding: '48px 48px 42px', display: 'flex', alignItems: 'center', gap: 30, flexShrink: 0 }}>
+        <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${C.crema}`, flexShrink: 0, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}>
+          <img src="/logo_v2.jpeg" crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: C.azulClaro, fontWeight: 700, fontSize: 24, letterSpacing: 7, textTransform: 'uppercase', marginBottom: 14 }}>
+          <div style={{ color: C.azulClaro, fontWeight: 700, fontSize: 24, letterSpacing: 7, textTransform: 'uppercase', marginBottom: 12 }}>
             Nuestro menú
           </div>
-          <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.crema, fontSize: 76, lineHeight: 0.96 }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.crema, fontSize: 72, lineHeight: 0.96 }}>
             Celestina Cocina
           </div>
           <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 22, letterSpacing: 1, marginTop: 12 }}>
             Pastas caseras y más · Caaguazú
           </div>
         </div>
-        <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${C.crema}`, flexShrink: 0, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}>
-          <img src="/logo_v2.jpeg" crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
       </div>
 
       {/* Banda azulejo con amarillo */}
-      <div style={{ display: 'flex', height: 16, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: 16, overflow: 'hidden', flexShrink: 0 }}>
         {Array.from({ length: 20 }, (_, i) => (
           <div key={i} style={{ display: 'flex' }}>
             <div style={{ width: 40, height: 16, background: C.azul }} />
@@ -121,23 +139,25 @@ export default function MenuStatusFlyer({ categories }) {
         ))}
       </div>
 
-      {/* Cuerpo: categorías con grilla */}
-      <div style={{ padding: '44px 48px 52px' }}>
-        {cats.map((cat, ci) => (
-          <div key={cat.id} style={{ marginTop: ci === 0 ? 0 : 46 }}>
-            {/* Título de categoría */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 26 }}>
-              <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.azul, fontSize: 46, lineHeight: 1 }}>
-                {cat.name}
-              </span>
-              <div style={{ flex: 1, height: 3, background: C.azulejo, borderRadius: 2 }} />
+      {/* Cuerpo: categorías con grilla, auto-escalado para caber en el 9:16 */}
+      <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '44px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div ref={contentRef} style={{ width: '100%', transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+          {cats.map((cat, ci) => (
+            <div key={cat.id} style={{ marginTop: ci === 0 ? 0 : 46 }}>
+              {/* Título de categoría */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 26 }}>
+                <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.azul, fontSize: 46, lineHeight: 1 }}>
+                  {cat.name}
+                </span>
+                <div style={{ flex: 1, height: 3, background: C.azulejo, borderRadius: 2 }} />
+              </div>
+              {/* Grilla 2 columnas */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 30 }}>
+                {cat.items.map(item => <Card key={item.id} item={item} />)}
+              </div>
             </div>
-            {/* Grilla 2 columnas */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 30 }}>
-              {cat.items.map(item => <Card key={item.id} item={item} />)}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )

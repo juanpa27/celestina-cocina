@@ -39,13 +39,15 @@ function fmtGs(n) {
 // ── Paleta (sin amarillo) ─────────────────────────────────────────────────────
 
 const AZUL      = '#1d5e8c'
-const AZUL_HOND = '#164a70'
+const AMARILLO  = '#f2c14e'   // solo para la banda de azulejo (no para texto)
 const CREMA     = '#fdfbf6'
 const AZ_CLARO  = '#5b96bf'
 const AZULEJO   = '#eaf3f8'
 const TEXTO     = '#1c2b36'
-const GRIS      = '#6b7280'
 const GRIS_L    = '#9ca3af'
+
+// Altura reservada arriba en cada página para el header fijo (logo + azulejo).
+const HEADER_H = 96
 
 // ── Estilos PDF ──────────────────────────────────────────────────────────────
 
@@ -55,10 +57,17 @@ const S = StyleSheet.create({
 
   page: {
     backgroundColor: CREMA,
+    paddingTop: HEADER_H,   // deja lugar al header fijo en TODAS las páginas
     paddingBottom: 40,
   },
 
-  // ── Header ──
+  // ── Header (fijo arriba en cada página) ──
+  headerFixed: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   header: {
     backgroundColor: AZUL,
     flexDirection: 'row',
@@ -110,7 +119,7 @@ const S = StyleSheet.create({
   // ── Cuerpo ──
   body: {
     paddingHorizontal: 22,
-    paddingTop: 16,
+    paddingTop: 18,   // aire bajo el header fijo, en cada página
   },
 
   // ── Categoría ──
@@ -158,6 +167,15 @@ const S = StyleSheet.create({
     width: '100%',
     height: 108,
     objectFit: 'cover',
+  },
+  // Bebidas (botellas / latas): la foto suele ser vertical con fondo — 'contain'
+  // sobre fondo claro la muestra entera y centrada en vez de recortarla fea.
+  photoBebida: {
+    width: '100%',
+    height: 108,
+    objectFit: 'contain',
+    backgroundColor: '#ffffff',
+    paddingVertical: 6,
   },
   photoPlaceholder: {
     width: '100%',
@@ -255,24 +273,26 @@ function CartaDocument({ categories, config, logoUrl }) {
     <Document title="Celestina Cocina — Carta" author="Celestina Cocina">
       <Page size="A4" style={S.page}>
 
-        {/* ── Header ── */}
-        <View style={S.header}>
-          <Image src={logoUrl} style={S.logo} />
-          <View style={S.headerCenter}>
-            <Text style={S.brand}>Celestina Cocina</Text>
-            <Text style={S.tagline}>PASTAS CASERAS Y MÁS  ·  CAAGUAZÚ, PARAGUAY</Text>
-          </View>
-          <Text style={S.headerDate}>Carta · {fecha}</Text>
-        </View>
-
-        {/* ── Azulejo stripe ── */}
-        <View style={S.azuStrip}>
-          {Array.from({ length: 14 }, (_, i) => (
-            <View key={i} style={{ flexDirection: 'row' }}>
-              <View style={{ width: 30, height: 9, backgroundColor: AZUL }} />
-              <View style={{ width: 18, height: 9, backgroundColor: AZ_CLARO }} />
+        {/* ── Header + azulejo (fijo arriba en todas las páginas) ── */}
+        <View style={S.headerFixed} fixed>
+          <View style={S.header}>
+            <Image src={logoUrl} style={S.logo} />
+            <View style={S.headerCenter}>
+              <Text style={S.brand}>Celestina Cocina</Text>
+              <Text style={S.tagline}>PASTAS CASERAS Y MÁS  ·  CAAGUAZÚ, PARAGUAY</Text>
             </View>
-          ))}
+            <Text style={S.headerDate}>Carta · {fecha}</Text>
+          </View>
+          <View style={S.azuStrip}>
+            {Array.from({ length: 15 }, (_, i) => (
+              <View key={i} style={{ flexDirection: 'row' }}>
+                <View style={{ width: 28, height: 9, backgroundColor: AZUL }} />
+                <View style={{ width: 5,  height: 9, backgroundColor: AMARILLO }} />
+                <View style={{ width: 28, height: 9, backgroundColor: AZ_CLARO }} />
+                <View style={{ width: 5,  height: 9, backgroundColor: AMARILLO }} />
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* ── Categorías ── */}
@@ -280,6 +300,7 @@ function CartaDocument({ categories, config, logoUrl }) {
           {cats.map(cat => {
             const items = (cat.items ?? []).filter(i => i.available)
             if (!items.length) return null
+            const isBebida = /bebida/i.test(cat.name)
             return (
               <View key={cat.id} style={S.cat} wrap>
                 <View style={S.catHdr}>
@@ -297,7 +318,7 @@ function CartaDocument({ categories, config, logoUrl }) {
                         wrap={false}
                       >
                         {item.image_url
-                          ? <Image src={item.image_url} style={S.photo} cache />
+                          ? <Image src={item.image_url} style={isBebida ? S.photoBebida : S.photo} cache />
                           : (
                             <View style={S.photoPlaceholder}>
                               <Text style={S.photoPlaceholderMark}>{item.name.charAt(0).toUpperCase()}</Text>

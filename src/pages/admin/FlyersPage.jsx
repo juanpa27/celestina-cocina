@@ -25,7 +25,6 @@ export default function FlyersPage() {
   const flyerRef = useRef(null)
   const boxRef = useRef(null)
   const [scale, setScale] = useState(0.33)
-  const [flyerH, setFlyerH] = useState(FLYER_H)   // alto real del flyer (el modo "status" crece con el contenido)
 
   // Le saca el fondo a la foto en el momento (IA corriendo en el navegador, nada
   // se sube a un servidor) para que quede flotando libre sobre el texto, sin
@@ -71,20 +70,6 @@ export default function FlyersPage() {
     ro.observe(box)
     return () => ro.disconnect()
   }, [])
-
-  // El flyer "status" (menú completo) crece con la cantidad de platos — mido su
-  // alto real para que el contenedor de preview lo acompañe (los demás son 1920 fijo).
-  useLayoutEffect(() => {
-    const node = flyerRef.current
-    if (!node) return
-    const update = () => setFlyerH(node.offsetHeight || FLYER_H)
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(node)
-    return () => ro.disconnect()
-  }, [mode, categories])
-
-  const dynamicHeight = mode === 'status'
 
   // Defaults una vez que carga el menú
   const allDishes = useMemo(
@@ -303,14 +288,12 @@ export default function FlyersPage() {
             ref={boxRef}
             className="w-full overflow-hidden rounded-3xl mx-auto"
             style={{
-              ...(dynamicHeight
-                ? { height: flyerH * scale }
-                : { aspectRatio: `${FLYER_W}/${FLYER_H}` }),
+              aspectRatio: `${FLYER_W}/${FLYER_H}`,
               boxShadow: '0 12px 40px rgba(29,94,140,0.18)',
               border: '1px solid #e3edf2',
             }}
           >
-            <div style={{ width: FLYER_W, height: dynamicHeight ? 'auto' : FLYER_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            <div style={{ width: FLYER_W, height: FLYER_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
               <div ref={flyerRef}>
                 {mode === 'dish' && <DishFlyer item={activeDish} categoryName={activeDish?.categoryName} />}
                 {mode === 'category' && <CategoryFlyer category={activeCategory} />}
