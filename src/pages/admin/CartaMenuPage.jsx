@@ -303,7 +303,10 @@ function CartaDocument({ categories, config, logoUrl }) {
             const isBebida = /bebida/i.test(cat.name)
             return (
               <View key={cat.id} style={S.cat} wrap>
-                <View style={S.catHdr}>
+                {/* minPresenceAhead: no dejar el título de categoría solo al pie
+                    de una página; si no entra al menos una fila de tarjetas
+                    debajo, empuja el título a la página siguiente. */}
+                <View style={S.catHdr} minPresenceAhead={170}>
                   <Text style={S.catName}>{cat.name}</Text>
                   <View style={S.catRule} />
                 </View>
