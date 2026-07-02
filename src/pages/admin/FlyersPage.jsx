@@ -2,19 +2,17 @@ import { useState, useRef, useLayoutEffect, useMemo } from 'react'
 import { Download, Loader2, UtensilsCrossed, LayoutGrid, Type, ImagePlus, Upload, X, GalleryVerticalEnd } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
-import { useConfig } from '../../hooks/useConfig'
 import { exportFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
 import DishFlyer from '../../components/admin/flyers/DishFlyer'
 import CategoryFlyer from '../../components/admin/flyers/CategoryFlyer'
 import TextHeroFlyer, { autoSplitHeroName } from '../../components/admin/flyers/TextHeroFlyer'
 import TextPhotoFlyer from '../../components/admin/flyers/TextPhotoFlyer'
-import MenuBoardFlyer from '../../components/admin/flyers/MenuBoardFlyer'
+import MenuStatusFlyer from '../../components/admin/flyers/MenuStatusFlyer'
 
 export default function FlyersPage() {
   const { data: categories, isLoading } = useMenuAdmin()
-  const { data: config } = useConfig()
 
-  const [mode, setMode] = useState('dish')        // 'dish' | 'category' | 'board' | 'hero' | 'phototext'
+  const [mode, setMode] = useState('dish')        // 'dish' | 'category' | 'status' | 'hero' | 'phototext'
   const [categoryId, setCategoryId] = useState(null)
   const [dishId, setDishId] = useState(null)
   const [displayName, setDisplayName] = useState('')
@@ -27,6 +25,7 @@ export default function FlyersPage() {
   const flyerRef = useRef(null)
   const boxRef = useRef(null)
   const [scale, setScale] = useState(0.33)
+  const [flyerH, setFlyerH] = useState(FLYER_H)   // alto real del flyer (el modo "status" crece con el contenido)
 
   // Le saca el fondo a la foto en el momento (IA corriendo en el navegador, nada
   // se sube a un servidor) para que quede flotando libre sobre el texto, sin
@@ -73,6 +72,20 @@ export default function FlyersPage() {
     return () => ro.disconnect()
   }, [])
 
+  // El flyer "status" (menú completo) crece con la cantidad de platos — mido su
+  // alto real para que el contenedor de preview lo acompañe (los demás son 1920 fijo).
+  useLayoutEffect(() => {
+    const node = flyerRef.current
+    if (!node) return
+    const update = () => setFlyerH(node.offsetHeight || FLYER_H)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(node)
+    return () => ro.disconnect()
+  }, [mode, categories])
+
+  const dynamicHeight = mode === 'status'
+
   // Defaults una vez que carga el menú
   const allDishes = useMemo(
     () => (categories ?? []).flatMap(c => (c.items ?? []).map(it => ({ ...it, categoryName: c.name }))),
@@ -105,9 +118,11 @@ export default function FlyersPage() {
     if (!flyerRef.current) return
     setExporting(true)
     try {
-      const name = (mode === 'category' || mode === 'board')
-        ? `celestina-${activeCategory?.name ?? 'menu'}`
-        : `celestina-${activeDish?.name ?? 'plato'}`
+      const name = mode === 'status'
+        ? 'celestina-menu-completo'
+        : mode === 'category'
+          ? `celestina-${activeCategory?.name ?? 'menu'}`
+          : `celestina-${activeDish?.name ?? 'plato'}`
       const bytes = await exportFlyer(flyerRef.current, { format, fileName: name })
       toast.success(`Flyer listo · ${(bytes / 1024).toFixed(0)} KB`)
     } catch (e) {
@@ -144,7 +159,7 @@ export default function FlyersPage() {
             <div className="grid grid-cols-2 gap-2">
               <ModeBtn active={mode === 'dish'} onClick={() => handleModeChange('dish')} icon={UtensilsCrossed} label="Por plato" />
               <ModeBtn active={mode === 'category'} onClick={() => handleModeChange('category')} icon={LayoutGrid} label="Categoría" />
-              <ModeBtn active={mode === 'board'} onClick={() => handleModeChange('board')} icon={GalleryVerticalEnd} label="Menú (estado)" />
+              <ModeBtn active={mode === 'status'} onClick={() => handleModeChange('status')} icon={GalleryVerticalEnd} label="Menú (estado)" />
               <ModeBtn active={mode === 'hero'} onClick={() => handleModeChange('hero')} icon={Type} label="Texto hero" />
               <ModeBtn active={mode === 'phototext'} onClick={() => handleModeChange('phototext')} icon={ImagePlus} label="Texto + foto" />
             </div>
@@ -233,8 +248,8 @@ export default function FlyersPage() {
             </Field>
           )}
 
-          {/* Selección de categoría (category + board) */}
-          {(mode === 'category' || mode === 'board') && (
+          {/* Selección de categoría (solo modo Categoría) */}
+          {mode === 'category' && (
             <Field label="Categoría">
               <select
                 value={activeCategory?.id ?? ''}
@@ -247,9 +262,18 @@ export default function FlyersPage() {
                 ))}
               </select>
               <p className="text-xs mt-1.5" style={{ color: '#7c8a93' }}>
-                {mode === 'board'
-                  ? 'Arma un menú con hasta 6 platos de la categoría, priorizando destacados y con descuento.'
-                  : 'Muestra hasta 4 platos, priorizando los destacados y con descuento.'}
+                Muestra hasta 4 platos, priorizando los destacados y con descuento.
+              </p>
+            </Field>
+          )}
+
+          {/* Info modo Menú (estado) */}
+          {mode === 'status' && (
+            <Field label="Menú completo">
+              <p className="text-xs" style={{ color: '#7c8a93' }}>
+                Arma una sola imagen con <b>todos los platos activos</b>, agrupados por categoría,
+                con el diseño de la carta. Ideal para postear como estado de WhatsApp. La altura
+                se ajusta a la cantidad de platos.
               </p>
             </Field>
           )}
@@ -278,13 +302,19 @@ export default function FlyersPage() {
           <div
             ref={boxRef}
             className="w-full overflow-hidden rounded-3xl mx-auto"
-            style={{ aspectRatio: `${FLYER_W}/${FLYER_H}`, boxShadow: '0 12px 40px rgba(29,94,140,0.18)', border: '1px solid #e3edf2' }}
+            style={{
+              ...(dynamicHeight
+                ? { height: flyerH * scale }
+                : { aspectRatio: `${FLYER_W}/${FLYER_H}` }),
+              boxShadow: '0 12px 40px rgba(29,94,140,0.18)',
+              border: '1px solid #e3edf2',
+            }}
           >
-            <div style={{ width: FLYER_W, height: FLYER_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            <div style={{ width: FLYER_W, height: dynamicHeight ? 'auto' : FLYER_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
               <div ref={flyerRef}>
                 {mode === 'dish' && <DishFlyer item={activeDish} categoryName={activeDish?.categoryName} />}
                 {mode === 'category' && <CategoryFlyer category={activeCategory} />}
-                {mode === 'board' && <MenuBoardFlyer category={activeCategory} whatsapp={config?.whatsapp_number} />}
+                {mode === 'status' && <MenuStatusFlyer categories={categories} />}
                 {mode === 'hero' && <TextHeroFlyer item={activeDish} displayName={displayName} />}
                 {mode === 'phototext' && <TextPhotoFlyer item={activeDish} displayName={displayName} photoUrl={photoUrl} />}
               </div>
