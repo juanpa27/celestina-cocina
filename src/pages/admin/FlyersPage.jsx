@@ -1,17 +1,20 @@
 import { useState, useRef, useLayoutEffect, useMemo } from 'react'
-import { Download, Loader2, UtensilsCrossed, LayoutGrid, Type, ImagePlus, Upload, X } from 'lucide-react'
+import { Download, Loader2, UtensilsCrossed, LayoutGrid, Type, ImagePlus, Upload, X, GalleryVerticalEnd } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenuAdmin } from '../../hooks/useMenu'
+import { useConfig } from '../../hooks/useConfig'
 import { exportFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
 import DishFlyer from '../../components/admin/flyers/DishFlyer'
 import CategoryFlyer from '../../components/admin/flyers/CategoryFlyer'
 import TextHeroFlyer, { autoSplitHeroName } from '../../components/admin/flyers/TextHeroFlyer'
 import TextPhotoFlyer from '../../components/admin/flyers/TextPhotoFlyer'
+import MenuBoardFlyer from '../../components/admin/flyers/MenuBoardFlyer'
 
 export default function FlyersPage() {
   const { data: categories, isLoading } = useMenuAdmin()
+  const { data: config } = useConfig()
 
-  const [mode, setMode] = useState('dish')        // 'dish' | 'category' | 'hero' | 'phototext'
+  const [mode, setMode] = useState('dish')        // 'dish' | 'category' | 'board' | 'hero' | 'phototext'
   const [categoryId, setCategoryId] = useState(null)
   const [dishId, setDishId] = useState(null)
   const [displayName, setDisplayName] = useState('')
@@ -102,7 +105,7 @@ export default function FlyersPage() {
     if (!flyerRef.current) return
     setExporting(true)
     try {
-      const name = mode === 'category'
+      const name = (mode === 'category' || mode === 'board')
         ? `celestina-${activeCategory?.name ?? 'menu'}`
         : `celestina-${activeDish?.name ?? 'plato'}`
       const bytes = await exportFlyer(flyerRef.current, { format, fileName: name })
@@ -141,6 +144,7 @@ export default function FlyersPage() {
             <div className="grid grid-cols-2 gap-2">
               <ModeBtn active={mode === 'dish'} onClick={() => handleModeChange('dish')} icon={UtensilsCrossed} label="Por plato" />
               <ModeBtn active={mode === 'category'} onClick={() => handleModeChange('category')} icon={LayoutGrid} label="Categoría" />
+              <ModeBtn active={mode === 'board'} onClick={() => handleModeChange('board')} icon={GalleryVerticalEnd} label="Menú (estado)" />
               <ModeBtn active={mode === 'hero'} onClick={() => handleModeChange('hero')} icon={Type} label="Texto hero" />
               <ModeBtn active={mode === 'phototext'} onClick={() => handleModeChange('phototext')} icon={ImagePlus} label="Texto + foto" />
             </div>
@@ -229,8 +233,8 @@ export default function FlyersPage() {
             </Field>
           )}
 
-          {/* Selección de categoría */}
-          {mode === 'category' && (
+          {/* Selección de categoría (category + board) */}
+          {(mode === 'category' || mode === 'board') && (
             <Field label="Categoría">
               <select
                 value={activeCategory?.id ?? ''}
@@ -243,7 +247,9 @@ export default function FlyersPage() {
                 ))}
               </select>
               <p className="text-xs mt-1.5" style={{ color: '#7c8a93' }}>
-                Muestra hasta 4 platos, priorizando los destacados y con descuento.
+                {mode === 'board'
+                  ? 'Arma un menú con hasta 6 platos de la categoría, priorizando destacados y con descuento.'
+                  : 'Muestra hasta 4 platos, priorizando los destacados y con descuento.'}
               </p>
             </Field>
           )}
@@ -278,6 +284,7 @@ export default function FlyersPage() {
               <div ref={flyerRef}>
                 {mode === 'dish' && <DishFlyer item={activeDish} categoryName={activeDish?.categoryName} />}
                 {mode === 'category' && <CategoryFlyer category={activeCategory} />}
+                {mode === 'board' && <MenuBoardFlyer category={activeCategory} whatsapp={config?.whatsapp_number} />}
                 {mode === 'hero' && <TextHeroFlyer item={activeDish} displayName={displayName} />}
                 {mode === 'phototext' && <TextPhotoFlyer item={activeDish} displayName={displayName} photoUrl={photoUrl} />}
               </div>
