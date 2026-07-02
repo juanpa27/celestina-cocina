@@ -9,11 +9,22 @@ import { useMenu } from '../../hooks/useMenu'
 import { useConfig } from '../../hooks/useConfig'
 import { calcDiscountedPrice } from '../../lib/utils'
 
-// ── Fuentes ──────────────────────────────────────────────────────────────────
+// ── Fuentes (mismas del menú del front: Fraunces display + DM Sans body) ──────
 
 Font.register({
-  family: 'TitanOne',
-  src: '/fonts/titan-one.ttf',
+  family: 'Fraunces',
+  fonts: [
+    { src: '/fonts/fraunces-600.ttf', fontWeight: 600 },
+    { src: '/fonts/fraunces-700.ttf', fontWeight: 700 },
+  ],
+})
+Font.register({
+  family: 'DM Sans',
+  fonts: [
+    { src: '/fonts/dmsans-400.ttf', fontWeight: 400 },
+    { src: '/fonts/dmsans-500.ttf', fontWeight: 500 },
+    { src: '/fonts/dmsans-700.ttf', fontWeight: 700 },
+  ],
 })
 
 // Sin hifenación — los nombres de platos no deben cortarse
@@ -25,23 +36,26 @@ function fmtGs(n) {
   return 'Gs ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-// ── Paleta ───────────────────────────────────────────────────────────────────
+// ── Paleta (sin amarillo) ─────────────────────────────────────────────────────
 
 const AZUL      = '#1d5e8c'
-const AMARILLO  = '#f2c14e'
+const AZUL_HOND = '#164a70'
 const CREMA     = '#fdfbf6'
 const AZ_CLARO  = '#5b96bf'
+const AZULEJO   = '#eaf3f8'
 const TEXTO     = '#1c2b36'
 const GRIS      = '#6b7280'
 const GRIS_L    = '#9ca3af'
 
 // ── Estilos PDF ──────────────────────────────────────────────────────────────
 
+const CARD_GAP = 12
+
 const S = StyleSheet.create({
 
   page: {
     backgroundColor: CREMA,
-    paddingBottom: 46,
+    paddingBottom: 40,
   },
 
   // ── Header ──
@@ -49,15 +63,15 @@ const S = StyleSheet.create({
     backgroundColor: AZUL,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
   },
   logo: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     borderWidth: 2,
-    borderColor: AMARILLO,
+    borderColor: CREMA,
     marginRight: 14,
     flexShrink: 0,
   },
@@ -65,122 +79,161 @@ const S = StyleSheet.create({
     flex: 1,
   },
   brand: {
-    fontFamily: 'TitanOne',
-    fontSize: 23,
-    color: AMARILLO,
-    letterSpacing: -0.5,
+    fontFamily: 'Fraunces',
+    fontWeight: 700,
+    fontSize: 25,
+    color: CREMA,
+    letterSpacing: -0.4,
   },
   tagline: {
-    fontFamily: 'Helvetica',
-    fontSize: 7,
+    fontFamily: 'DM Sans',
+    fontWeight: 500,
+    fontSize: 7.5,
     color: AZ_CLARO,
     letterSpacing: 2,
-    marginTop: 2,
+    marginTop: 3,
   },
   headerDate: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'DM Sans',
     fontSize: 7.5,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.5)',
     textAlign: 'right',
   },
 
   // ── Azulejo stripe ──
   azuStrip: {
     flexDirection: 'row',
-    height: 10,
+    height: 9,
     overflow: 'hidden',
   },
 
   // ── Cuerpo ──
   body: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingHorizontal: 22,
+    paddingTop: 16,
   },
 
   // ── Categoría ──
   cat: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   catHdr: {
-    backgroundColor: AZUL,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 4,
-    marginBottom: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   catName: {
-    fontFamily: 'TitanOne',
-    fontSize: 11,
-    color: AMARILLO,
-    letterSpacing: 0.3,
+    fontFamily: 'Fraunces',
+    fontWeight: 700,
+    fontSize: 16,
+    color: AZUL,
+    letterSpacing: -0.2,
+    marginRight: 8,
+  },
+  catRule: {
+    flex: 1,
+    height: 2,
+    backgroundColor: AZULEJO,
+    borderRadius: 1,
   },
 
-  // ── Ítems ──
-  itemRow: {
+  // ── Grilla de tarjetas ──
+  grid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 5,
+    flexWrap: 'wrap',
+  },
+  card: {
+    width: (595 - 44 - CARD_GAP) / 2,   // A4 595 - padding 22*2 - gap
+    marginBottom: CARD_GAP,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#edf1f4',
+    overflow: 'hidden',
+  },
+  cardRightGap: {
+    marginRight: CARD_GAP,
+  },
+  photo: {
+    width: '100%',
+    height: 108,
+    objectFit: 'cover',
+  },
+  photoPlaceholder: {
+    width: '100%',
+    height: 108,
+    backgroundColor: AZULEJO,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoPlaceholderMark: {
+    fontFamily: 'Fraunces',
+    fontWeight: 700,
+    fontSize: 30,
+    color: '#c4dcea',
+  },
+  discBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: AZUL,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  discBadgeText: {
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
+    fontSize: 7,
+    color: CREMA,
+  },
+  cardBody: {
     paddingHorizontal: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eeeee8',
+    paddingTop: 7,
+    paddingBottom: 9,
   },
-  itemEven: {
-    backgroundColor: 'rgba(29,94,140,0.03)',
-  },
-  itemLeft: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  itemName: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 10,
+  cardName: {
+    fontFamily: 'Fraunces',
+    fontWeight: 600,
+    fontSize: 10.5,
     color: TEXTO,
+    lineHeight: 1.15,
+    marginBottom: 5,
   },
-  itemMod: {
-    fontFamily: 'Helvetica-Oblique',
-    fontSize: 8,
-    color: GRIS,
-    marginTop: 2,
-  },
-  itemNotes: {
-    fontFamily: 'Helvetica-Oblique',
-    fontSize: 8,
-    color: GRIS_L,
-    marginTop: 1,
-  },
-  priceCol: {
-    alignItems: 'flex-end',
-    flexShrink: 0,
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   price: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 10,
+    fontFamily: 'DM Sans',
+    fontWeight: 700,
+    fontSize: 12,
     color: AZUL,
   },
   priceOld: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'DM Sans',
     fontSize: 8,
     color: GRIS_L,
     textDecoration: 'line-through',
-    textAlign: 'right',
+    marginLeft: 6,
   },
 
   // ── Footer fijo en cada página ──
   footer: {
     position: 'absolute',
-    bottom: 14,
-    left: 20,
-    right: 20,
+    bottom: 12,
+    left: 22,
+    right: 22,
     backgroundColor: AZUL,
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
   footerText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'DM Sans',
+    fontWeight: 500,
     fontSize: 8,
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
   },
 })
@@ -206,7 +259,7 @@ function CartaDocument({ categories, config, logoUrl }) {
         <View style={S.header}>
           <Image src={logoUrl} style={S.logo} />
           <View style={S.headerCenter}>
-            <Text style={S.brand}>CELESTINA COCINA</Text>
+            <Text style={S.brand}>Celestina Cocina</Text>
             <Text style={S.tagline}>PASTAS CASERAS Y MÁS  ·  CAAGUAZÚ, PARAGUAY</Text>
           </View>
           <Text style={S.headerDate}>Carta · {fecha}</Text>
@@ -214,12 +267,10 @@ function CartaDocument({ categories, config, logoUrl }) {
 
         {/* ── Azulejo stripe ── */}
         <View style={S.azuStrip}>
-          {Array.from({ length: 11 }, (_, i) => (
+          {Array.from({ length: 14 }, (_, i) => (
             <View key={i} style={{ flexDirection: 'row' }}>
-              <View style={{ width: 28, height: 10, backgroundColor: '#1d5e8c' }} />
-              <View style={{ width: 4,  height: 10, backgroundColor: '#f2c14e' }} />
-              <View style={{ width: 28, height: 10, backgroundColor: '#5b96bf' }} />
-              <View style={{ width: 4,  height: 10, backgroundColor: '#f2c14e' }} />
+              <View style={{ width: 30, height: 9, backgroundColor: AZUL }} />
+              <View style={{ width: 18, height: 9, backgroundColor: AZ_CLARO }} />
             </View>
           ))}
         </View>
@@ -230,42 +281,40 @@ function CartaDocument({ categories, config, logoUrl }) {
             const items = (cat.items ?? []).filter(i => i.available)
             if (!items.length) return null
             return (
-              <View key={cat.id} style={S.cat} wrap={false}>
+              <View key={cat.id} style={S.cat} wrap>
                 <View style={S.catHdr}>
-                  <Text style={S.catName}>{cat.name.toUpperCase()}</Text>
+                  <Text style={S.catName}>{cat.name}</Text>
+                  <View style={S.catRule} />
                 </View>
-                <View>
+                <View style={S.grid}>
                   {items.map((item, idx) => {
                     const price = calcDiscountedPrice(item.price, item.discount_pct)
                     const hasDisc = item.discount_pct > 0
-                    const mods = item.modifierGroups ?? []
                     return (
                       <View
                         key={item.id}
-                        style={[S.itemRow, idx % 2 === 1 && S.itemEven]}
+                        style={[S.card, idx % 2 === 0 && S.cardRightGap]}
+                        wrap={false}
                       >
-                        <View style={S.itemLeft}>
-                          <Text style={S.itemName}>{item.name}</Text>
-                          {mods.map(g => (
-                            <Text key={g.id} style={S.itemMod}>
-                              {g.required ? '★ ' : '◦ '}
-                              {g.name}:{' '}
-                              {g.modifiers.map(m =>
-                                m.extra_price > 0
-                                  ? `${m.name} (+${fmtGs(m.extra_price)})`
-                                  : m.name
-                              ).join(' \xB7 ')}
-                            </Text>
-                          ))}
-                          {item.notes
-                            ? <Text style={S.itemNotes}>{'⤷'} {item.notes}</Text>
-                            : null}
-                        </View>
-                        <View style={S.priceCol}>
-                          {hasDisc && (
-                            <Text style={S.priceOld}>{fmtGs(item.price)}</Text>
-                          )}
-                          <Text style={S.price}>{fmtGs(price)}</Text>
+                        {item.image_url
+                          ? <Image src={item.image_url} style={S.photo} cache />
+                          : (
+                            <View style={S.photoPlaceholder}>
+                              <Text style={S.photoPlaceholderMark}>{item.name.charAt(0).toUpperCase()}</Text>
+                            </View>
+                          )
+                        }
+                        {hasDisc && (
+                          <View style={S.discBadge}>
+                            <Text style={S.discBadgeText}>{item.discount_pct}% OFF</Text>
+                          </View>
+                        )}
+                        <View style={S.cardBody}>
+                          <Text style={S.cardName}>{item.name}</Text>
+                          <View style={S.priceRow}>
+                            <Text style={S.price}>{fmtGs(price)}</Text>
+                            {hasDisc && <Text style={S.priceOld}>{fmtGs(item.price)}</Text>}
+                          </View>
                         </View>
                       </View>
                     )
