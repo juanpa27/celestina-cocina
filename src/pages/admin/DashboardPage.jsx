@@ -95,6 +95,7 @@ export default function DashboardPage() {
   const [customMonth, setCustomMonth] = useState(NOW.getMonth())
   const [customYear,  setCustomYear]  = useState(THIS_YEAR)
   const [customDay,   setCustomDay]   = useState(NOW)
+  const [dayDraft,    setDayDraft]    = useState(toInputDate(NOW))
 
   const { data: orders, isLoading } = useOrders()
 
@@ -183,7 +184,11 @@ export default function DashboardPage() {
 
               {/* Botón selector de día */}
               <button
-                onClick={() => setPicker(p => p === 'day' ? null : 'day')}
+                onClick={() => setPicker(p => {
+                  if (p === 'day') return null
+                  setDayDraft(toInputDate(customDay))
+                  return 'day'
+                })}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
                 style={isDay
                   ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
@@ -220,14 +225,24 @@ export default function DashboardPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9ca3af' }}>
                   Elegí un día
                 </label>
-                <input
-                  type="date"
-                  value={toInputDate(customDay)}
-                  max={toInputDate(NOW)}
-                  onChange={(e) => pickDay(e.target.value)}
-                  className="w-full py-2.5 px-3 rounded-xl text-sm font-bold"
-                  style={{ background: '#f3f4f6', color: '#1c2b36', border: '1px solid #e5e7eb' }}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={dayDraft}
+                    max={toInputDate(NOW)}
+                    onChange={(e) => setDayDraft(e.target.value)}
+                    className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold min-w-0"
+                    style={{ background: '#f3f4f6', color: '#1c2b36', border: '1px solid #e5e7eb' }}
+                  />
+                  <button
+                    onClick={() => pickDay(dayDraft)}
+                    disabled={!dayDraft}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+                    style={{ background: '#1d5e8c', color: '#fff' }}
+                  >
+                    Ver
+                  </button>
+                </div>
                 <div className="flex gap-2 mt-3">
                   {[
                     { label: 'Hoy',  date: NOW },
