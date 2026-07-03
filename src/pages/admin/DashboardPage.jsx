@@ -1,55 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { startOfDay, startOfWeek, startOfMonth, isAfter, isSameDay, format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingBag, Wallet, Receipt, ArrowRight, Clock,
-  CheckCircle2, Calendar, CalendarDays, TrendingUp,
+  CheckCircle2, TrendingUp, FileBarChart,
 } from 'lucide-react'
 import { useOrders } from '../../hooks/useOrders'
+import { usePeriodFilter } from '../../hooks/usePeriodFilter'
 import { formatPrice } from '../../lib/utils'
 import { STATUS_META } from '../../lib/orderStatus'
-
-// ── Constantes de tiempo ──────────────────────────────────────────
-const NOW       = new Date()
-const YESTERDAY = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 1)
-const THIS_YEAR = NOW.getFullYear()
-const YEARS    = [THIS_YEAR, THIS_YEAR + 1]
-
-const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-const MONTH_FULL  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-
-const QUICK = [
-  { value: 'today', label: 'Hoy' },
-  { value: 'week',  label: 'Semana' },
-  { value: 'month', label: 'Mes' },
-  { value: null,    label: 'Todo' },
-]
-const ALL_STATUSES = ['pendiente','preparando','enviado','entregado','cancelado']
-
-// ── Filtrado ──────────────────────────────────────────────────────
-function applyFilter(orders, mode, month, year, day) {
-  if (!orders) return []
-  const now = new Date()
-  if (mode === 'today')  return orders.filter(o => isAfter(new Date(o.created_at), startOfDay(now)))
-  if (mode === 'week')   return orders.filter(o => isAfter(new Date(o.created_at), startOfWeek(now, { weekStartsOn: 1 })))
-  if (mode === 'month')  return orders.filter(o => isAfter(new Date(o.created_at), startOfMonth(now)))
-  if (mode === 'day')    return orders.filter(o => isSameDay(new Date(o.created_at), day))
-  if (mode === 'custom') return orders.filter(o => {
-    const d = new Date(o.created_at)
-    return d.getMonth() === month && d.getFullYear() === year
-  })
-  return orders
-}
-
-// Label largo de un día: "Viernes 3 de julio de 2026" (+ " · Hoy" si es hoy)
-function dayLabel(d) {
-  const s = format(d, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })
-  const cap = s.charAt(0).toUpperCase() + s.slice(1)
-  return isSameDay(d, new Date()) ? `${cap} · Hoy` : cap
-}
-const toInputDate = (d) => format(d, 'yyyy-MM-dd')
+import { computeReportStats } from '../../lib/reportStats'
+import PeriodFilterBar from '../../components/admin/PeriodFilterBar'
+// Carga diferida: arrastra react-pdf / html-to-image, fuera del bundle eager del Dashboard.
+const OrdersSummaryModal = lazy(() => import('../../components/admin/reports/OrdersSummaryModal'))
 
 // ── Counter animado (la única animación cara de la página) ─────────
 function useCountUp(target, duration = 750) {
@@ -80,77 +43,24 @@ const rise = {
   }),
 }
 
-const pickerVariants = {
-  hidden: { opacity: 0, height: 0, overflow: 'hidden' },
-  show:   { opacity: 1, height: 'auto', overflow: 'visible',
-            transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
-  exit:   { opacity: 0, height: 0, overflow: 'hidden',
-            transition: { duration: 0.18 } },
-}
-
 // ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [mode,        setMode]        = useState('today')
-  const [picker,      setPicker]      = useState(null) // null | 'month' | 'day'
-  const [customMonth, setCustomMonth] = useState(NOW.getMonth())
-  const [customYear,  setCustomYear]  = useState(THIS_YEAR)
-  const [customDay,   setCustomDay]   = useState(NOW)
-  const [dayDraft,    setDayDraft]    = useState(toInputDate(NOW))
+  const filter = usePeriodFilter('today')
+  const { isDay, periodLabel, filterKey } = filter
+  const [showReport, setShowReport] = useState(false)
 
   const { data: orders, isLoading } = useOrders()
 
-  const isCustom  = mode === 'custom'
-  const isDay     = mode === 'day'
-  const filterKey = isCustom ? `m-${customYear}-${customMonth}`
-                  : isDay    ? `d-${toInputDate(customDay)}`
-                  : String(mode)
-
-  function pickQuick(val) { setMode(val); setPicker(null) }
-
-  function pickMonth(month, year) {
-    setCustomMonth(month)
-    setCustomYear(year)
-    setMode('custom')
-    setPicker(null)
-  }
-
-  function pickDay(dateStr) {
-    if (!dateStr) return
-    const [y, m, d] = dateStr.split('-').map(Number)
-    setCustomDay(new Date(y, m - 1, d))
-    setMode('day')
-    setPicker(null)
-  }
-
   // Datos filtrados
-  const inPeriod  = applyFilter(orders, mode, customMonth, customYear, customDay)
-  const billable  = inPeriod.filter(o => o.status !== 'cancelado')
-  const facturado = billable.reduce((n, o) => n + Number(o.total), 0)
-  const pedidos   = billable.length
-  const ticket    = pedidos ? Math.round(facturado / pedidos) : 0
-  const pendientes = orders?.filter(o => o.status === 'pendiente').length ?? 0
-
-  // Top productos
-  const productMap = {}
-  for (const o of billable)
-    for (const it of o.order_items ?? [])
-      productMap[it.item_name] = (productMap[it.item_name] ?? 0) + it.quantity
-  const topProducts = Object.entries(productMap).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const inPeriod  = filter.filterOrders(orders)
+  const stats = computeReportStats(inPeriod)
+  const { facturado, pedidos, ticket, topProducts, statusCounts } = stats
   const topMax = topProducts[0]?.[1] ?? 1
-
-  const statusCounts = ALL_STATUSES
-    .map(s => ({ s, n: inPeriod.filter(o => o.status === s).length }))
-    .filter(x => x.n > 0)
+  const pendientes = orders?.filter(o => o.status === 'pendiente').length ?? 0
 
   // Números animados
   const animFacturado = useCountUp(facturado)
   const animTicket    = useCountUp(ticket)
-
-  const periodLabel = isCustom
-    ? `${MONTH_FULL[customMonth]} ${customYear}`
-    : isDay
-    ? dayLabel(customDay)
-    : QUICK.find(q => q.value === mode)?.label ?? 'Todo'
 
   return (
     <div style={{ minHeight: '100%', background: 'linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%)' }}>
@@ -163,165 +73,20 @@ export default function DashboardPage() {
               <h1 className="font-display font-bold text-2xl leading-tight" style={{ color: '#1c2b36' }}>Resumen</h1>
               <p className="text-xs mt-0.5 font-semibold" style={{ color: '#9ca3af' }}>{periodLabel}</p>
             </div>
-
-            {/* Pills de período rápido + botón calendario */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {QUICK.map(p => {
-                const on = mode === p.value
-                return (
-                  <button
-                    key={String(p.value)}
-                    onClick={() => pickQuick(p.value)}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
-                    style={on
-                      ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
-                      : { background: '#fff',    color: '#6b7280',  border: '1px solid #e5e7eb' }}
-                  >
-                    {p.label}
-                  </button>
-                )
-              })}
-
-              {/* Botón selector de día */}
-              <button
-                onClick={() => setPicker(p => {
-                  if (p === 'day') return null
-                  setDayDraft(toInputDate(customDay))
-                  return 'day'
-                })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
-                style={isDay
-                  ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
-                  : { background: '#fff',    color: '#6b7280',  border: '1px solid #e5e7eb' }}
-              >
-                <CalendarDays size={12} />
-                {isDay ? format(customDay, 'dd/MM/yy') : 'Por día'}
-              </button>
-
-              {/* Botón selector de mes/año */}
-              <button
-                onClick={() => setPicker(p => p === 'month' ? null : 'month')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
-                style={isCustom
-                  ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
-                  : { background: '#fff',    color: '#6b7280',  border: '1px solid #e5e7eb' }}
-              >
-                <Calendar size={12} />
-                {isCustom ? `${MONTH_SHORT[customMonth]} ${customYear}` : 'Por mes'}
-              </button>
-            </div>
           </div>
 
-          {/* ── Picker de día ── */}
-          <AnimatePresence>
-            {picker === 'day' && (
-              <motion.div
-                key="day-picker"
-                variants={pickerVariants}
-                initial="hidden" animate="show" exit="exit"
-                className="rounded-2xl p-4"
-                style={{ background: '#fff', border: '1px solid #e5e7eb' }}
-              >
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9ca3af' }}>
-                  Elegí un día
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={dayDraft}
-                    max={toInputDate(NOW)}
-                    onChange={(e) => setDayDraft(e.target.value)}
-                    className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold min-w-0"
-                    style={{ background: '#f3f4f6', color: '#1c2b36', border: '1px solid #e5e7eb' }}
-                  />
-                  <button
-                    onClick={() => pickDay(dayDraft)}
-                    disabled={!dayDraft}
-                    className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-                    style={{ background: '#1d5e8c', color: '#fff' }}
-                  >
-                    Ver
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  {[
-                    { label: 'Hoy',  date: NOW },
-                    { label: 'Ayer', date: YESTERDAY },
-                  ].map(({ label, date }) => (
-                    <button
-                      key={label}
-                      onClick={() => pickDay(toInputDate(date))}
-                      className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-                      style={{ background: '#f3f4f6', color: '#374151' }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <PeriodFilterBar filter={filter} />
 
-          {/* ── Picker de mes ── */}
-          <AnimatePresence>
-            {picker === 'month' && (
-              <motion.div
-                key="month-picker"
-                variants={pickerVariants}
-                initial="hidden" animate="show" exit="exit"
-                className="rounded-2xl p-4"
-                style={{ background: '#fff', border: '1px solid #e5e7eb' }}
-              >
-                {/* Selector de año */}
-                <div className="flex gap-2 mb-3">
-                  {YEARS.map(yr => (
-                    <button
-                      key={yr}
-                      onClick={() => setCustomYear(yr)}
-                      className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-                      style={customYear === yr
-                        ? { background: '#1c2b36', color: '#f2c14e' }
-                        : { background: '#f3f4f6', color: '#6b7280' }}
-                    >
-                      {yr}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Grilla 4×3 de meses */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {MONTH_SHORT.map((m, i) => {
-                    const isFuture = customYear > THIS_YEAR ||
-                                     (customYear === THIS_YEAR && i > NOW.getMonth())
-                    const isSelected = isCustom && i === customMonth && customYear === (isCustom ? customYear : THIS_YEAR)
-                    const isCurrent  = i === NOW.getMonth() && customYear === THIS_YEAR
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => pickMonth(i, customYear)}
-                        className="py-2 rounded-xl text-xs font-bold transition-all relative"
-                        style={{
-                          background: isSelected ? '#1d5e8c' : '#f3f4f6',
-                          color: isSelected ? '#fff' : isFuture ? '#c9cdd4' : '#374151',
-                        }}
-                      >
-                        {m}
-                        {/* Punto indicador de mes actual */}
-                        {isCurrent && !isSelected && (
-                          <span style={{
-                            position: 'absolute', bottom: 4, left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: 4, height: 4, borderRadius: '50%',
-                            background: '#1d5e8c', display: 'block',
-                          }} />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Ver reporte del día */}
+          {isDay && (
+            <button
+              onClick={() => setShowReport(true)}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.99]"
+              style={{ background: '#fff', color: '#1d5e8c', border: '1.5px solid #1d5e8c' }}
+            >
+              <FileBarChart size={16} /> Ver reporte del día
+            </button>
+          )}
         </div>
 
         {/* ── Contenido principal ── */}
@@ -502,6 +267,17 @@ export default function DashboardPage() {
           </AnimatePresence>
         )}
       </div>
+
+      {showReport && (
+        <Suspense fallback={null}>
+          <OrdersSummaryModal
+            periodLabel={periodLabel}
+            orders={inPeriod}
+            stats={stats}
+            onClose={() => setShowReport(false)}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

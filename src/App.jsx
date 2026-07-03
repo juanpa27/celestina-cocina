@@ -13,6 +13,7 @@ const FlyersPage      = lazy(() => import('./pages/admin/FlyersPage'))
 const CartaMenuPage   = lazy(() => import('./pages/admin/CartaMenuPage'))
 const ConfigPage      = lazy(() => import('./pages/admin/ConfigPage'))
 const NewOrderPage    = lazy(() => import('./pages/admin/NewOrderPage'))
+const ReportsPage     = lazy(() => import('./pages/admin/ReportsPage'))
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="pedidos"       element={<OrdersPage />} />
           <Route path="menu"          element={<MenuAdminPage />} />
           <Route path="complementos"  element={<ComplementosPage />} />
+          <Route path="reportes"      element={<Suspense fallback={null}><ReportsPage /></Suspense>} />
           <Route path="flyers"        element={<Suspense fallback={null}><FlyersPage /></Suspense>} />
           <Route path="carta"         element={<Suspense fallback={null}><CartaMenuPage /></Suspense>} />
           <Route path="configuracion" element={<Suspense fallback={null}><ConfigPage /></Suspense>} />

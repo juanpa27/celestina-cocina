@@ -13,6 +13,8 @@ export const STATUS_META = {
 // Secuencia "viva" de un pedido (cancelado queda fuera del flujo lineal).
 export const STATUS_FLOW = ['pendiente', 'preparando', 'enviado', 'entregado']
 
+export const ALL_STATUSES = Object.keys(STATUS_META)
+
 // Color de urgencia para un pedido pendiente según minutos de antigüedad.
 export function urgencyColor(minutes) {
   if (minutes < 10) return '#16a34a'   // fresco

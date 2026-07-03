@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, SlidersHorizontal, Images, BookOpen, Settings, LogOut, MoreHorizontal, X } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, SlidersHorizontal, Images, BookOpen, FileBarChart, Settings, LogOut, MoreHorizontal, X } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import LoginPage from './LoginPage'
 
@@ -9,6 +9,7 @@ const NAV = [
   { to: '/admin/pedidos',       icon: ShoppingBag,        label: 'Pedidos' },
   { to: '/admin/menu',          icon: UtensilsCrossed,    label: 'Menú' },
   { to: '/admin/complementos',  icon: SlidersHorizontal,  label: 'Complementos' },
+  { to: '/admin/reportes',      icon: FileBarChart,       label: 'Reportes' },
   { to: '/admin/flyers',        icon: Images,             label: 'Flyers' },
   { to: '/admin/carta',         icon: BookOpen,           label: 'Carta PDF' },
   { to: '/admin/configuracion', icon: Settings,           label: 'Config' },

@@ -1,34 +1,14 @@
 import { useState, useMemo } from 'react'
 import {
   Document, Page, View, Text, Image,
-  StyleSheet, Font, pdf, BlobProvider,
+  StyleSheet, pdf, BlobProvider,
 } from '@react-pdf/renderer'
 import { BookOpen, FileText, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMenu } from '../../hooks/useMenu'
 import { useConfig } from '../../hooks/useConfig'
 import { calcDiscountedPrice } from '../../lib/utils'
-
-// ── Fuentes (mismas del menú del front: Fraunces display + DM Sans body) ──────
-
-Font.register({
-  family: 'Fraunces',
-  fonts: [
-    { src: '/fonts/fraunces-600.ttf', fontWeight: 600 },
-    { src: '/fonts/fraunces-700.ttf', fontWeight: 700 },
-  ],
-})
-Font.register({
-  family: 'DM Sans',
-  fonts: [
-    { src: '/fonts/dmsans-400.ttf', fontWeight: 400 },
-    { src: '/fonts/dmsans-500.ttf', fontWeight: 500 },
-    { src: '/fonts/dmsans-700.ttf', fontWeight: 700 },
-  ],
-})
-
-// Sin hifenación — los nombres de platos no deben cortarse
-Font.registerHyphenationCallback(word => [word])
+import '../../lib/pdfFonts' // registra Fraunces + DM Sans para react-pdf (efecto de módulo)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
