@@ -1,4 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import '../../../lib/pdfFonts'
 import { STATUS_META } from '../../../lib/orderStatus'
 
@@ -18,6 +20,7 @@ const AZ_CLARO = '#5b96bf'
 const AZULEJO  = '#eaf3f8'
 const TEXTO    = '#1c2b36'
 const GRIS_L   = '#9ca3af'
+const MONO     = 'Space Mono'
 
 const HEADER_H = 96
 
@@ -30,7 +33,7 @@ const S = StyleSheet.create({
   headerCenter: { flex: 1 },
   brand: { fontFamily: 'Fraunces', fontWeight: 700, fontSize: 25, color: CREMA, letterSpacing: -0.4 },
   tagline: { fontFamily: 'DM Sans', fontWeight: 500, fontSize: 7.5, color: AZ_CLARO, letterSpacing: 2, marginTop: 3 },
-  headerDate: { fontFamily: 'DM Sans', fontSize: 7.5, color: 'rgba(255,255,255,0.5)', textAlign: 'right' },
+  headerDate: { fontFamily: MONO, fontSize: 7.5, color: 'rgba(255,255,255,0.5)', textAlign: 'right' },
 
   azuStrip: { flexDirection: 'row', height: 9, overflow: 'hidden' },
 
@@ -38,31 +41,32 @@ const S = StyleSheet.create({
 
   title: { fontFamily: 'DM Sans', fontWeight: 700, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: AZUL },
   period: { fontFamily: 'Fraunces', fontWeight: 700, fontSize: 20, color: TEXTO, marginTop: 2 },
-  generated: { fontFamily: 'DM Sans', fontSize: 8, color: GRIS_L, marginTop: 2, marginBottom: 14 },
+  generated: { fontFamily: MONO, fontSize: 8, color: GRIS_L, marginTop: 2, marginBottom: 14 },
 
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 18 },
   kpi: { flex: 1, backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: AZULEJO, padding: 10 },
   kpiLabel: { fontFamily: 'DM Sans', fontWeight: 700, fontSize: 7, letterSpacing: 1, textTransform: 'uppercase', color: GRIS_L },
-  kpiValue: { fontFamily: 'Fraunces', fontWeight: 700, fontSize: 15, color: TEXTO, marginTop: 3 },
+  kpiValue: { fontFamily: MONO, fontWeight: 700, fontSize: 13, color: TEXTO, marginTop: 3 },
 
   sectionLabel: { fontFamily: 'DM Sans', fontWeight: 700, fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: GRIS_L, marginBottom: 8 },
+
+  leaderBox: { backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: AZULEJO, padding: 12, marginBottom: 18 },
+  leaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3.5, borderTopWidth: 1, borderTopColor: AZULEJO, borderStyle: 'dashed' },
+  leaderRowFirst: { borderTopWidth: 0 },
+  leaderLabel: { fontFamily: 'DM Sans', fontWeight: 500, fontSize: 9, color: TEXTO },
+  leaderValue: { fontFamily: MONO, fontWeight: 700, fontSize: 9.5, color: AZUL },
 
   order: { backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: AZULEJO, padding: 12, marginBottom: 8 },
   orderTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   orderName: { fontFamily: 'Fraunces', fontWeight: 700, fontSize: 12, color: TEXTO },
-  orderMeta: { fontFamily: 'DM Sans', fontSize: 8, color: GRIS_L, marginTop: 2 },
+  orderMeta: { fontFamily: MONO, fontSize: 7.5, color: GRIS_L, marginTop: 2 },
   orderRight: { alignItems: 'flex-end' },
-  orderTotal: { fontFamily: 'Fraunces', fontWeight: 700, fontSize: 12, color: AZUL },
+  orderTotal: { fontFamily: MONO, fontWeight: 700, fontSize: 11, color: AZUL },
   statusPill: { fontFamily: 'DM Sans', fontWeight: 700, fontSize: 7, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 4 },
   itemsBox: { borderTopWidth: 1, borderTopColor: AZULEJO, borderStyle: 'dashed', paddingTop: 6, marginTop: 2 },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1.5 },
   itemName: { fontFamily: 'DM Sans', fontSize: 8.5, color: TEXTO, flex: 1 },
-  itemSubtotal: { fontFamily: 'DM Sans', fontSize: 8.5, color: GRIS_L },
-
-  top: { backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: AZULEJO, padding: 12, marginTop: 4 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
-  topName: { fontFamily: 'DM Sans', fontWeight: 500, fontSize: 9, color: TEXTO },
-  topUnits: { fontFamily: 'DM Sans', fontWeight: 700, fontSize: 9, color: AZUL },
+  itemSubtotal: { fontFamily: MONO, fontSize: 8, color: GRIS_L },
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: AZUL, paddingVertical: 8, paddingHorizontal: 22 },
   footerText: { fontFamily: 'DM Sans', fontSize: 7.5, color: CREMA, textAlign: 'center' },
@@ -84,9 +88,21 @@ function AzulejoStrip() {
   )
 }
 
+function LeaderRow({ label, value, first, muted }) {
+  return (
+    <View style={[S.leaderRow, first && S.leaderRowFirst]}>
+      <Text style={S.leaderLabel}>{label}</Text>
+      <Text style={[S.leaderValue, muted && { color: GRIS_L }]}>{value}</Text>
+    </View>
+  )
+}
+
 // Documento PDF del reporte de ventas — mismo header de marca que la Carta.
+// Foco en montos: facturado / cancelado / facturación por día / por estado.
+// "Más vendidos" (cantidad de platos) queda fuera de este documento a
+// propósito — esa métrica vive solo en el Dashboard.
 export default function ReportDocument({ periodLabel, generatedAt, stats, orders, logoUrl, whatsapp }) {
-  const { facturado, pedidos, ticket, topProducts } = stats
+  const { facturado, pedidos, ticket, montoCancelado, byDay, statusCounts } = stats
   const footerLine = whatsapp
     ? `Pedidos por WhatsApp: ${whatsapp}  ·  celestina-cocina.vercel.app`
     : `celestina-cocina.vercel.app`
@@ -115,17 +131,28 @@ export default function ReportDocument({ periodLabel, generatedAt, stats, orders
             <View style={S.kpi}><Text style={S.kpiLabel}>Facturado</Text><Text style={S.kpiValue}>{fmtGs(facturado)}</Text></View>
             <View style={S.kpi}><Text style={S.kpiLabel}>Pedidos</Text><Text style={S.kpiValue}>{pedidos}</Text></View>
             <View style={S.kpi}><Text style={S.kpiLabel}>Ticket prom.</Text><Text style={S.kpiValue}>{ticket ? fmtGs(ticket) : '—'}</Text></View>
+            {montoCancelado > 0 && (
+              <View style={S.kpi}><Text style={S.kpiLabel}>Cancelado</Text><Text style={[S.kpiValue, { color: GRIS_L }]}>{fmtGs(montoCancelado)}</Text></View>
+            )}
           </View>
 
-          {topProducts.length > 0 && (
-            <View style={{ marginBottom: 18 }}>
-              <Text style={S.sectionLabel}>Más vendidos</Text>
-              <View style={S.top}>
-                {topProducts.map(([name, units], i) => (
-                  <View key={name} style={[S.topRow, i > 0 && { borderTopWidth: 1, borderTopColor: AZULEJO }]}>
-                    <Text style={S.topName}>{i + 1}. {name}</Text>
-                    <Text style={S.topUnits}>{units} u.</Text>
-                  </View>
+          {byDay.length > 1 && (
+            <View>
+              <Text style={S.sectionLabel}>Facturación por día</Text>
+              <View style={S.leaderBox}>
+                {byDay.map(({ date, monto }, i) => (
+                  <LeaderRow key={date.toISOString()} first={i === 0} label={format(date, 'EEE d MMM', { locale: es })} value={fmtGs(monto)} />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {statusCounts.length > 0 && (
+            <View>
+              <Text style={S.sectionLabel}>Facturación por estado</Text>
+              <View style={S.leaderBox}>
+                {statusCounts.map(({ s, n, monto }, i) => (
+                  <LeaderRow key={s} first={i === 0} label={`${STATUS_META[s].label} (${n})`} value={fmtGs(monto)} muted={s === 'cancelado'} />
                 ))}
               </View>
             </View>

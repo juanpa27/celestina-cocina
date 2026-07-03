@@ -17,6 +17,13 @@ Font.register({
     { src: '/fonts/dmsans-700.ttf', fontWeight: 700 },
   ],
 })
+Font.register({
+  family: 'Space Mono',
+  fonts: [
+    { src: '/fonts/spacemono-400.ttf', fontWeight: 400 },
+    { src: '/fonts/spacemono-700.ttf', fontWeight: 700 },
+  ],
+})
 
 // Sin hifenación — nombres de platos/clientes no deben cortarse
 Font.registerHyphenationCallback(word => [word])

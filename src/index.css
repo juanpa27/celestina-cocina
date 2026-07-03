@@ -11,6 +11,24 @@
   font-display: swap;
 }
 
+/* Space Mono autohospedada — mismo motivo que Titan One (evita el bloqueo
+   CORS de html-to-image al exportar). Se usa solo para cifras/montos en
+   los reportes (look "recibo impreso"), nunca para texto de lectura larga. */
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/spacemono-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/spacemono-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Colores Celestina */
   --color-celestina-azul: #1d5e8c;
@@ -24,12 +42,41 @@
   /* Tipografías */
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "DM Sans", system-ui, sans-serif;
+  --font-figures: "Space Mono", "SF Mono", ui-monospace, monospace;
 }
 
 html {
   font-family: var(--font-body);
   background-color: #fdfbf6;
   color: #1c2b36;
+}
+
+/* ── Reportes: look "recibo impreso" ──────────────────────────────
+   Cifras (montos, cantidades, horas) en Space Mono tabular. */
+.figures {
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Resaltador de marcador amarillo detrás del monto principal — el único
+   lugar donde se usa el amarillo de marca en Reportes (todo lo demás
+   queda en tinta/azul, como una libreta de ventas real). */
+.ticket-highlight {
+  position: relative;
+  display: inline-block;
+}
+.ticket-highlight::before {
+  content: '';
+  position: absolute;
+  left: -0.1em;
+  right: -0.14em;
+  bottom: 0.12em;
+  height: 0.32em;
+  background: #f2c14e;
+  opacity: 0.55;
+  border-radius: 2px;
+  transform: rotate(-1deg);
+  z-index: -1;
 }
 
 /* ── Mobile global fixes ── */

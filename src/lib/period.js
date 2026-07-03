@@ -25,6 +25,11 @@ export function dayLabel(d) {
   return isSameDay(d, new Date()) ? `${cap} · Hoy` : cap
 }
 
+// Label corto de un día: "3 de julio" — para botones ("Ver pedidos 3 de julio")
+export function shortDayLabel(d) {
+  return format(d, "d 'de' MMMM", { locale: es })
+}
+
 // Label corto para un rango: "3 jul – 10 jul 2026"
 export function rangeLabel(start, end) {
   const sameYear  = start.getFullYear() === end.getFullYear()

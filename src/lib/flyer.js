@@ -15,8 +15,8 @@ function slugify(text) {
     || 'flyer'
 }
 
-async function renderToBlob(node, { format = 'webp' } = {}) {
-  const opts = { pixelRatio: 1, cacheBust: true, backgroundColor: '#fdfbf6' }
+async function renderToBlob(node, { format = 'webp', backgroundColor = '#fdfbf6' } = {}) {
+  const opts = { pixelRatio: 1, cacheBust: true, backgroundColor }
   await toCanvas(node, opts)
   const canvas = await toCanvas(node, opts)
   const mime = format === 'jpg' ? 'image/jpeg' : 'image/webp'
@@ -27,9 +27,11 @@ async function renderToBlob(node, { format = 'webp' } = {}) {
 }
 
 // Genera la imagen a partir del nodo del flyer (1080×1920) y dispara la descarga.
-// Devuelve el peso en bytes del archivo generado.
-export async function exportFlyer(node, { format = 'webp', fileName = 'flyer' } = {}) {
-  const blob = await renderToBlob(node, { format })
+// Devuelve el peso en bytes del archivo generado. `backgroundColor` es el color
+// crema de marca por default (flyers) — pasarlo explícito si el nodo exportado
+// usa otro fondo (ej. el papel gris/blanco de Reportes).
+export async function exportFlyer(node, { format = 'webp', fileName = 'flyer', backgroundColor } = {}) {
+  const blob = await renderToBlob(node, { format, backgroundColor })
   const ext = format === 'jpg' ? 'jpg' : 'webp'
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -43,8 +45,8 @@ export async function exportFlyer(node, { format = 'webp', fileName = 'flyer' } 
 }
 
 // Comparte la imagen via Web Share API (mobile); descarga como fallback en desktop.
-export async function shareFlyer(node, { fileName = 'celestina', title = 'Celestina Cocina' } = {}) {
-  const blob = await renderToBlob(node, { format: 'jpg' })
+export async function shareFlyer(node, { fileName = 'celestina', title = 'Celestina Cocina', backgroundColor } = {}) {
+  const blob = await renderToBlob(node, { format: 'jpg', backgroundColor })
   const file = new File([blob], `${slugify(fileName)}.jpg`, { type: 'image/jpeg' })
 
   if (navigator.share && navigator.canShare?.({ files: [file] })) {

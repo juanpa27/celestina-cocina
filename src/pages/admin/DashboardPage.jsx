@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useOrders } from '../../hooks/useOrders'
 import { usePeriodFilter } from '../../hooks/usePeriodFilter'
+import { shortDayLabel } from '../../lib/period'
 import { formatPrice } from '../../lib/utils'
 import { STATUS_META } from '../../lib/orderStatus'
 import { computeReportStats } from '../../lib/reportStats'
@@ -46,7 +47,7 @@ const rise = {
 // ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const filter = usePeriodFilter('today')
-  const { isDay, periodLabel, filterKey } = filter
+  const { isDay, periodLabel, filterKey, customDay } = filter
   const [showReport, setShowReport] = useState(false)
 
   const { data: orders, isLoading } = useOrders()
@@ -77,14 +78,14 @@ export default function DashboardPage() {
 
           <PeriodFilterBar filter={filter} />
 
-          {/* Ver reporte del día */}
+          {/* Ver pedidos del día elegido */}
           {isDay && (
             <button
               onClick={() => setShowReport(true)}
               className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.99]"
               style={{ background: '#fff', color: '#1d5e8c', border: '1.5px solid #1d5e8c' }}
             >
-              <FileBarChart size={16} /> Ver reporte del día
+              <FileBarChart size={16} /> Ver pedidos {shortDayLabel(customDay)}
             </button>
           )}
         </div>
