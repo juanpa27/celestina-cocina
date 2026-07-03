@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
+import { startOfDay, startOfWeek, startOfMonth, isAfter, isSameDay, format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingBag, Wallet, Receipt, ArrowRight, Clock,
-  CheckCircle2, Calendar, TrendingUp,
+  CheckCircle2, Calendar, CalendarDays, TrendingUp,
 } from 'lucide-react'
 import { useOrders } from '../../hooks/useOrders'
 import { formatPrice } from '../../lib/utils'
 import { STATUS_META } from '../../lib/orderStatus'
 
 // ── Constantes de tiempo ──────────────────────────────────────────
-const NOW      = new Date()
+const NOW       = new Date()
+const YESTERDAY = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 1)
 const THIS_YEAR = NOW.getFullYear()
 const YEARS    = [THIS_YEAR, THIS_YEAR + 1]
 
@@ -27,18 +29,27 @@ const QUICK = [
 const ALL_STATUSES = ['pendiente','preparando','enviado','entregado','cancelado']
 
 // ── Filtrado ──────────────────────────────────────────────────────
-function applyFilter(orders, mode, month, year) {
+function applyFilter(orders, mode, month, year, day) {
   if (!orders) return []
   const now = new Date()
   if (mode === 'today')  return orders.filter(o => isAfter(new Date(o.created_at), startOfDay(now)))
   if (mode === 'week')   return orders.filter(o => isAfter(new Date(o.created_at), startOfWeek(now, { weekStartsOn: 1 })))
   if (mode === 'month')  return orders.filter(o => isAfter(new Date(o.created_at), startOfMonth(now)))
+  if (mode === 'day')    return orders.filter(o => isSameDay(new Date(o.created_at), day))
   if (mode === 'custom') return orders.filter(o => {
     const d = new Date(o.created_at)
     return d.getMonth() === month && d.getFullYear() === year
   })
   return orders
 }
+
+// Label largo de un día: "Viernes 3 de julio de 2026" (+ " · Hoy" si es hoy)
+function dayLabel(d) {
+  const s = format(d, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })
+  const cap = s.charAt(0).toUpperCase() + s.slice(1)
+  return isSameDay(d, new Date()) ? `${cap} · Hoy` : cap
+}
+const toInputDate = (d) => format(d, 'yyyy-MM-dd')
 
 // ── Counter animado (la única animación cara de la página) ─────────
 function useCountUp(target, duration = 750) {
@@ -80,26 +91,38 @@ const pickerVariants = {
 // ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [mode,        setMode]        = useState('today')
-  const [showPicker,  setShowPicker]  = useState(false)
+  const [picker,      setPicker]      = useState(null) // null | 'month' | 'day'
   const [customMonth, setCustomMonth] = useState(NOW.getMonth())
   const [customYear,  setCustomYear]  = useState(THIS_YEAR)
+  const [customDay,   setCustomDay]   = useState(NOW)
 
   const { data: orders, isLoading } = useOrders()
 
   const isCustom  = mode === 'custom'
-  const filterKey = isCustom ? `${customYear}-${customMonth}` : String(mode)
+  const isDay     = mode === 'day'
+  const filterKey = isCustom ? `m-${customYear}-${customMonth}`
+                  : isDay    ? `d-${toInputDate(customDay)}`
+                  : String(mode)
 
-  function pickQuick(val) { setMode(val); setShowPicker(false) }
+  function pickQuick(val) { setMode(val); setPicker(null) }
 
   function pickMonth(month, year) {
     setCustomMonth(month)
     setCustomYear(year)
     setMode('custom')
-    setShowPicker(false)
+    setPicker(null)
+  }
+
+  function pickDay(dateStr) {
+    if (!dateStr) return
+    const [y, m, d] = dateStr.split('-').map(Number)
+    setCustomDay(new Date(y, m - 1, d))
+    setMode('day')
+    setPicker(null)
   }
 
   // Datos filtrados
-  const inPeriod  = applyFilter(orders, mode, customMonth, customYear)
+  const inPeriod  = applyFilter(orders, mode, customMonth, customYear, customDay)
   const billable  = inPeriod.filter(o => o.status !== 'cancelado')
   const facturado = billable.reduce((n, o) => n + Number(o.total), 0)
   const pedidos   = billable.length
@@ -124,6 +147,8 @@ export default function DashboardPage() {
 
   const periodLabel = isCustom
     ? `${MONTH_FULL[customMonth]} ${customYear}`
+    : isDay
+    ? dayLabel(customDay)
     : QUICK.find(q => q.value === mode)?.label ?? 'Todo'
 
   return (
@@ -156,9 +181,21 @@ export default function DashboardPage() {
                 )
               })}
 
+              {/* Botón selector de día */}
+              <button
+                onClick={() => setPicker(p => p === 'day' ? null : 'day')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
+                style={isDay
+                  ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
+                  : { background: '#fff',    color: '#6b7280',  border: '1px solid #e5e7eb' }}
+              >
+                <CalendarDays size={12} />
+                {isDay ? format(customDay, 'dd/MM/yy') : 'Por día'}
+              </button>
+
               {/* Botón selector de mes/año */}
               <button
-                onClick={() => setShowPicker(s => !s)}
+                onClick={() => setPicker(p => p === 'month' ? null : 'month')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
                 style={isCustom
                   ? { background: '#1c2b36', color: '#f2c14e', border: '1px solid #1c2b36' }
@@ -170,10 +207,51 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* ── Picker de día ── */}
+          <AnimatePresence>
+            {picker === 'day' && (
+              <motion.div
+                key="day-picker"
+                variants={pickerVariants}
+                initial="hidden" animate="show" exit="exit"
+                className="rounded-2xl p-4"
+                style={{ background: '#fff', border: '1px solid #e5e7eb' }}
+              >
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9ca3af' }}>
+                  Elegí un día
+                </label>
+                <input
+                  type="date"
+                  value={toInputDate(customDay)}
+                  max={toInputDate(NOW)}
+                  onChange={(e) => pickDay(e.target.value)}
+                  className="w-full py-2.5 px-3 rounded-xl text-sm font-bold"
+                  style={{ background: '#f3f4f6', color: '#1c2b36', border: '1px solid #e5e7eb' }}
+                />
+                <div className="flex gap-2 mt-3">
+                  {[
+                    { label: 'Hoy',  date: NOW },
+                    { label: 'Ayer', date: YESTERDAY },
+                  ].map(({ label, date }) => (
+                    <button
+                      key={label}
+                      onClick={() => pickDay(toInputDate(date))}
+                      className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                      style={{ background: '#f3f4f6', color: '#374151' }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* ── Picker de mes ── */}
           <AnimatePresence>
-            {showPicker && (
+            {picker === 'month' && (
               <motion.div
+                key="month-picker"
                 variants={pickerVariants}
                 initial="hidden" animate="show" exit="exit"
                 className="rounded-2xl p-4"
