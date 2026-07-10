@@ -12,6 +12,7 @@ import { formatPrice } from '../../lib/utils'
 import { STATUS_META } from '../../lib/orderStatus'
 import { computeReportStats } from '../../lib/reportStats'
 import PeriodFilterBar from '../../components/admin/PeriodFilterBar'
+import VisitasCard from '../../components/admin/VisitasCard'
 // Carga diferida: arrastra react-pdf / html-to-image, fuera del bundle eager del Dashboard.
 const OrdersSummaryModal = lazy(() => import('../../components/admin/reports/OrdersSummaryModal'))
 
@@ -189,10 +190,15 @@ export default function DashboardPage() {
                 ))}
               </motion.div>
 
+              {/* Visitas al menú (Vercel Web Analytics) */}
+              <motion.div variants={rise} initial="hidden" animate="show" custom={3}>
+                <VisitasCard />
+              </motion.div>
+
               {/* Desglose por estado */}
               {statusCounts.length > 0 && (
                 <motion.div
-                  variants={rise} initial="hidden" animate="show" custom={3}
+                  variants={rise} initial="hidden" animate="show" custom={4}
                   className="bg-white rounded-2xl p-4"
                   style={{ border: '1px solid #e9eef3', boxShadow: '0 1px 5px rgba(20,40,60,0.05)' }}
                 >
@@ -217,7 +223,7 @@ export default function DashboardPage() {
 
               {/* Top productos */}
               <motion.div
-                variants={rise} initial="hidden" animate="show" custom={4}
+                variants={rise} initial="hidden" animate="show" custom={5}
                 className="bg-white rounded-2xl p-4"
                 style={{ border: '1px solid #e9eef3', boxShadow: '0 1px 5px rgba(20,40,60,0.05)' }}
               >
