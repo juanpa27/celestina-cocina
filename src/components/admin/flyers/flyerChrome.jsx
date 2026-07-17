@@ -1,5 +1,6 @@
 import { MessageCircle } from 'lucide-react'
 import { BUSINESS_NAME, BUSINESS_SUBTITLE } from '../../../lib/config'
+import { formatLocalPhone } from '../../../lib/utils'
 
 // Paleta y patrón de marca, escalados al lienzo del flyer (1080px de ancho).
 export const C = {
@@ -19,6 +20,65 @@ export const AZULEJO_BG =
 
 export function AzulejoBand({ height = 30 }) {
   return <div style={{ height, background: AZULEJO_BG, flexShrink: 0 }} />
+}
+
+// Banda azulejo bicolor de firma (azul / azul claro con separadores amarillos).
+// Compartida por los flyers de estilo claro (Menú estado, Por plato, Categoría)
+// para que la franja se lea idéntica en los tres.
+export function AzulejoStripe({ height = 16 }) {
+  return (
+    <div style={{ display: 'flex', height, overflow: 'hidden', flexShrink: 0 }}>
+      {Array.from({ length: 20 }, (_, i) => (
+        <div key={i} style={{ display: 'flex' }}>
+          <div style={{ width: 40, height, background: C.azul }} />
+          <div style={{ width: 8, height, background: C.amarillo }} />
+          <div style={{ width: 40, height, background: C.azulClaro }} />
+          <div style={{ width: 8, height, background: C.amarillo }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Cabecera de marca clara: logo circular a la izquierda + eyebrow "NUESTRO MENÚ"
+// + nombre del negocio (Fraunces) + subtítulo, sobre el azul de marca. Si se le
+// pasa `phone`, agrega el pill de contacto (ícono + teléfono en formato local)
+// a la derecha, a la altura del subtítulo — con `position:absolute` a propósito,
+// para no comprimir el bloque de texto y evitar que el nombre se parta en dos
+// líneas. Compartida por los flyers de estilo claro para consistencia total.
+export function BrandHeader({ phone, eyebrow = 'Nuestro menú' }) {
+  return (
+    <div style={{ position: 'relative', background: C.azul, padding: '48px 48px 42px', display: 'flex', alignItems: 'center', gap: 30, flexShrink: 0 }}>
+      <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${C.crema}`, flexShrink: 0, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}>
+        <img src="/logo_v2.jpeg" crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: C.azulClaro, fontWeight: 700, fontSize: 24, letterSpacing: 7, textTransform: 'uppercase', marginBottom: 12 }}>
+          {eyebrow}
+        </div>
+        <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.crema, fontSize: 72, lineHeight: 0.96 }}>
+          {BUSINESS_NAME}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 22, letterSpacing: 1, marginTop: 12 }}>
+          {BUSINESS_SUBTITLE} · Caaguazú
+        </div>
+      </div>
+      {phone && (
+        <div style={{
+          position: 'absolute', right: 48, bottom: 44,
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(255,255,255,0.1)',
+          border: '1.5px solid rgba(242,193,78,0.45)',
+          borderRadius: 999, padding: '9px 20px',
+        }}>
+          <MessageCircle size={24} color={C.amarillo} strokeWidth={2.5} />
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, color: C.amarillo, fontSize: 26, letterSpacing: 0.5 }}>
+            {formatLocalPhone(phone)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function FlyerHeader() {

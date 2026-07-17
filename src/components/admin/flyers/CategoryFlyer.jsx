@@ -1,7 +1,8 @@
 import { Flame } from 'lucide-react'
 import { formatPrice, calcDiscountedPrice } from '../../../lib/utils'
 import { FLYER_W, FLYER_H } from '../../../lib/flyer'
-import { C, PhotoPlaceholder } from './flyerChrome'
+import { useConfig } from '../../../hooks/useConfig'
+import { C, BrandHeader, AzulejoStripe, PhotoPlaceholder } from './flyerChrome'
 
 const MAX_ITEMS = 4
 
@@ -17,63 +18,60 @@ function pickItems(items = []) {
 
 function GridCell({ item }) {
   if (!item) {
-    return (
-      <div style={{ flex: 1, background: '#1a2838', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PhotoPlaceholder />
-      </div>
-    )
+    return <div style={{ background: C.azulejo, borderRadius: 24, border: '1px solid #e7eef3' }} />
   }
 
   const effective = calcDiscountedPrice(item.price, item.discount_pct)
   const hasDiscount = item.discount_pct > 0
 
   return (
-    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-      {item.image_url
-        ? <img src={item.image_url} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        : <div style={{ width: '100%', height: '100%', background: C.azulejo }}><PhotoPlaceholder /></div>}
+    <div style={{
+      display: 'flex', flexDirection: 'column', minHeight: 0,
+      background: '#fff', borderRadius: 24, overflow: 'hidden',
+      border: item.is_popular ? `3px solid ${C.amarillo}` : '1px solid #e7eef3',
+      boxShadow: item.is_popular ? '0 10px 26px rgba(242,193,78,0.35)' : '0 8px 22px rgba(29,94,140,0.10)',
+    }}>
+      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        {item.image_url
+          ? <img src={item.image_url} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <div style={{ width: '100%', height: '100%', background: C.azulejo }}><PhotoPlaceholder /></div>}
 
-      {/* Degradado inferior */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%',
-        background: 'linear-gradient(to bottom, transparent, rgba(28,43,54,0.97))',
-      }} />
+        {hasDiscount && (
+          <div style={{
+            position: 'absolute', top: 18, left: 18,
+            background: C.amarillo, color: C.tinta,
+            fontWeight: 800, fontSize: 28, padding: '7px 18px', borderRadius: 999,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
+          }}>
+            {item.discount_pct}% OFF
+          </div>
+        )}
+        {item.is_popular && (
+          <div style={{
+            position: 'absolute', top: 18, right: 18,
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            background: C.amarillo, color: C.tinta,
+            fontWeight: 700, fontSize: 24, padding: '6px 16px', borderRadius: 999,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
+          }}>
+            <Flame size={20} strokeWidth={2.5} /> Más pedido
+          </div>
+        )}
+      </div>
 
-      {/* Badges arriba */}
-      {hasDiscount && (
-        <div style={{
-          position: 'absolute', top: 18, left: 18,
-          background: C.amarillo, color: C.tinta,
-          fontWeight: 800, fontSize: 26, padding: '7px 16px', borderRadius: 999,
-        }}>
-          {item.discount_pct}% OFF
-        </div>
-      )}
-      {item.is_popular && (
-        <div style={{
-          position: 'absolute', top: 18, right: 18,
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: 'rgba(242,193,78,0.95)', color: C.tinta,
-          fontWeight: 700, fontSize: 22, padding: '6px 14px', borderRadius: 999,
-        }}>
-          <Flame size={18} strokeWidth={2.5} /> Top
-        </div>
-      )}
-
-      {/* Texto abajo */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 28px 28px' }}>
-        <div style={{
-          fontFamily: 'Fraunces, serif', fontWeight: 700,
-          color: '#fff', fontSize: 38, lineHeight: 1.1, marginBottom: 8,
-          textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-        }}>
+      <div style={{ padding: '20px 26px 24px', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.tinta, fontSize: 40, lineHeight: 1.08, marginBottom: 10 }}>
           {item.name}
         </div>
-        <div style={{
-          fontFamily: 'Fraunces, serif', fontWeight: 700,
-          color: C.amarillo, fontSize: 34,
-        }}>
-          {formatPrice(effective)}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: C.azul, fontSize: 42 }}>
+            {formatPrice(effective)}
+          </span>
+          {hasDiscount && (
+            <span style={{ color: C.gris, fontSize: 28, textDecoration: 'line-through' }}>
+              {formatPrice(item.price)}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -81,64 +79,33 @@ function GridCell({ item }) {
 }
 
 export default function CategoryFlyer({ category }) {
+  const { data: config } = useConfig()
+  const phone = config?.whatsapp_negocio || '595986818441'
+
   if (!category) return null
   const picked = pickItems(category.items)
-
-  // Siempre 4 slots para que el grid quede completo
   const slots = [0, 1, 2, 3].map(i => picked[i] ?? null)
 
   return (
-    <div style={{ width: FLYER_W, height: FLYER_H, background: C.tinta, display: 'flex', flexDirection: 'column', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden' }}>
+    <div style={{ width: FLYER_W, height: FLYER_H, background: C.crema, display: 'flex', flexDirection: 'column', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden' }}>
 
-      {/* Header oscuro */}
-      <div style={{ padding: '60px 64px 48px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <BrandHeader phone={phone} />
+      <AzulejoStripe />
 
-          {/* Título */}
-          <div>
-            <div style={{ color: C.azulClaro, fontWeight: 700, fontSize: 22, letterSpacing: 6, textTransform: 'uppercase', marginBottom: 16 }}>
-              Nuestro menú
-            </div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: '#fff', fontSize: 96, lineHeight: 0.92 }}>
-              {category.name}
-            </div>
-          </div>
-
-          {/* Marca */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
-            background: 'rgba(255,255,255,0.07)',
-            padding: '10px 20px 10px 10px', borderRadius: 999, marginTop: 6,
-          }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${C.amarillo}` }}>
-              <img src="/logo_v2.jpeg" crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: '#fff', fontSize: 24 }}>
-              Celestina
-            </span>
-          </div>
+      {/* Cuerpo — título de categoría + grilla 2×2 sobre crema */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '44px 48px 48px' }}>
+        {/* Título de categoría */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 34, flexShrink: 0 }}>
+          <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, color: C.azul, fontSize: 72, lineHeight: 1 }}>
+            {category.name}
+          </span>
+          <div style={{ flex: 1, height: 4, background: C.azulejo, borderRadius: 2 }} />
         </div>
-      </div>
 
-      {/* Grid 2×2 — ocupa todo el espacio restante */}
-      <div style={{ display: 'flex', flex: 1, gap: 3 }}>
-        {/* Columna izquierda */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <GridCell item={slots[0]} />
-          <GridCell item={slots[2]} />
+        {/* Grilla 2×2 */}
+        <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 28 }}>
+          {slots.map((item, i) => <GridCell key={item?.id ?? `empty-${i}`} item={item} />)}
         </div>
-        {/* Columna derecha */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <GridCell item={slots[1]} />
-          <GridCell item={slots[3]} />
-        </div>
-      </div>
-
-      {/* Pie mínimo */}
-      <div style={{ flexShrink: 0, padding: '18px 64px', display: 'flex', justifyContent: 'center' }}>
-        <span style={{ color: '#334155', fontSize: 20, letterSpacing: 1 }}>
-          celestina-cocina.vercel.app
-        </span>
       </div>
     </div>
   )
