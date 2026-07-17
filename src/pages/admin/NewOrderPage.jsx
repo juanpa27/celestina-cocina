@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft, Plus, Minus, X, MapPin, Link2, Loader2,
-  ShoppingBag, Crosshair, Map,
+  ShoppingBag, Crosshair, Map, Store,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMenuAdmin } from '../../hooks/useMenu'
+import { useConfig } from '../../hooks/useConfig'
+import { usePickupOnly } from '../../hooks/usePickupOnly'
 import { supabase } from '../../lib/supabase'
 import { formatPrice, calcDiscountedPrice, parseLocationUrl } from '../../lib/utils'
 import LocationPicker from '../../components/menu/LocationPicker'
@@ -89,6 +91,8 @@ export default function NewOrderPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: categories = [], isLoading: menuLoading } = useMenuAdmin()
+  const { data: config } = useConfig()
+  const { data: pickupOnly } = usePickupOnly()
 
   // ── Cliente ──────────────────────────────────────────
   const [customerName, setCustomerName]   = useState('')
@@ -205,7 +209,15 @@ export default function NewOrderPage() {
   async function handleSubmit() {
     if (customerName.trim().length < 2) { toast.error('Ingresá el nombre del cliente'); return }
     if (cart.length === 0)               { toast.error('Agregá al menos un producto');   return }
-    if (!location)                        { toast.error('Ingresá la ubicación del cliente'); return }
+    // En modo retiro la ubicación es opcional; si no, sigue siendo obligatoria.
+    if (!pickupOnly && !location)        { toast.error('Ingresá la ubicación del cliente'); return }
+
+    // Pedido de retiro = modo retiro activo Y el admin no cargó una ubicación.
+    // (si igual carga una ubicación, se respeta como delivery normal.)
+    const isPickup = pickupOnly && !location
+    const deliveryAddress = isPickup
+      ? (config?.pickup_address ? `Retiro en el local — ${config.pickup_address}` : 'Retiro en el local')
+      : location.address
 
     setSubmitting(true)
     try {
@@ -214,9 +226,10 @@ export default function NewOrderPage() {
         .insert({
           customer_name:    customerName.trim(),
           customer_phone:   customerPhone.trim() || 'Sin teléfono',
-          delivery_address: location.address,
-          delivery_lat:     location.lat,
-          delivery_lng:     location.lng,
+          delivery_address: deliveryAddress,
+          delivery_lat:     isPickup ? null : location.lat,
+          delivery_lng:     isPickup ? null : location.lng,
+          is_pickup:        isPickup,
           notes:            notes.trim() || null,
           total,
         })
@@ -426,6 +439,15 @@ export default function NewOrderPage() {
           <Card>
             <SectionTitle>Ubicación de entrega</SectionTitle>
 
+            {pickupOnly && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12, padding: '10px 12px', background: '#fef9ec', borderRadius: 12, border: '1px solid #f2c14e' }}>
+                <Store size={16} style={{ color: '#1c2b36', flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: 12.5, color: '#1c2b36', margin: 0, lineHeight: 1.4 }}>
+                  <b>Modo retiro activo.</b> La ubicación es opcional — si no la cargás, el pedido queda como <b>retiro en el local</b>.
+                </p>
+              </div>
+            )}
+
             {/* Pegar link de WhatsApp */}
             <div style={{ marginBottom: 12 }}>
               <label style={LABEL}>
@@ -524,13 +546,13 @@ export default function NewOrderPage() {
           {/* ── Submit ── */}
           <button
             onClick={handleSubmit}
-            disabled={submitting || cart.length === 0 || !location || customerName.trim().length < 2}
+            disabled={submitting || cart.length === 0 || (!pickupOnly && !location) || customerName.trim().length < 2}
             style={{
               width: '100%', padding: '14px 0', borderRadius: 14,
               background: '#1d5e8c', color: '#fff', fontWeight: 700, fontSize: 15,
               border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              opacity: submitting || cart.length === 0 || !location || customerName.trim().length < 2 ? 0.5 : 1,
+              opacity: submitting || cart.length === 0 || (!pickupOnly && !location) || customerName.trim().length < 2 ? 0.5 : 1,
             }}
           >
             {submitting ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : null}

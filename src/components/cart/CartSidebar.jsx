@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check, CupSoda, CreditCard } from 'lucide-react'
+import { ShoppingBag, Loader2, X, Minus, Plus, ChevronLeft, Send, MapPin, Check, CupSoda, CreditCard, Store } from 'lucide-react'
 import LocationPicker from '../menu/LocationPicker'
 import toast from 'react-hot-toast'
 import { useCartStore, selectTotalItems, selectTotalPrice } from '../../store/cartStore'
 import { useConfig } from '../../hooks/useConfig'
+import { usePickupOnly } from '../../hooks/usePickupOnly'
 import { useMenu } from '../../hooks/useMenu'
 import { supabase } from '../../lib/supabase'
 import { formatPrice, buildWhatsAppMessage, vibrateFeedback, isWithinSchedule } from '../../lib/utils'
@@ -158,6 +159,7 @@ export default function CartSidebar({ isOpen, onClose }) {
   const [locationError, setLocationError] = useState(false)
 
   const { data: config } = useConfig()
+  const { data: pickupOnly } = usePickupOnly()
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(checkoutSchema),
@@ -168,19 +170,22 @@ export default function CartSidebar({ isOpen, onClose }) {
   async function onSubmit(data) {
     if (items.length === 0) return
 
-    // La ubicación del mapa es obligatoria: sin coordenadas no se puede entregar.
-    if (!hasLocation) {
+    // Guard server-side: verificar estado manual + horario + modo retiro antes
+    // de insertar (valor fresco, evita desincronización con la cache).
+    const { data: configRows } = await supabase
+      .from('app_config')
+      .select('key, value')
+      .in('key', ['is_open', 'schedule_open', 'schedule_close', 'pickup_only', 'pickup_address'])
+    const cfg = Object.fromEntries((configRows ?? []).map(r => [r.key, r.value]))
+    const isPickup = cfg.pickup_only === 'true'
+
+    // En delivery la ubicación del mapa es obligatoria; en modo retiro no hace falta.
+    if (!isPickup && !hasLocation) {
       setLocationError(true)
       toast.error('Marcá tu ubicación en el mapa para continuar.')
       return
     }
 
-    // Guard server-side: verificar estado manual + horario antes de insertar.
-    const { data: configRows } = await supabase
-      .from('app_config')
-      .select('key, value')
-      .in('key', ['is_open', 'schedule_open', 'schedule_close'])
-    const cfg = Object.fromEntries((configRows ?? []).map(r => [r.key, r.value]))
     if (cfg.is_open === 'false' || !isWithinSchedule(cfg.schedule_open, cfg.schedule_close)) {
       toast.error('El negocio está cerrado, no se pueden tomar pedidos ahora.')
       return
@@ -191,17 +196,22 @@ export default function CartSidebar({ isOpen, onClose }) {
     setSubmitting(true)
 
     try {
-      const lat = pickedLat
-      const lng = pickedLng
+      // En retiro no hay coordenadas y delivery_address (NOT NULL) lleva un texto.
+      const lat = isPickup ? null : pickedLat
+      const lng = isPickup ? null : pickedLng
+      const deliveryAddress = isPickup
+        ? (cfg.pickup_address ? `Retiro en el local — ${cfg.pickup_address}` : 'Retiro en el local')
+        : pickedAddress
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           customer_name: data.customerName,
           customer_phone: data.customerPhone,
-          delivery_address: pickedAddress,
+          delivery_address: deliveryAddress,
           delivery_lat: lat,
           delivery_lng: lng,
+          is_pickup: isPickup,
           notes: data.notes || null,
           total: totalPrice,
         })
@@ -240,10 +250,12 @@ export default function CartSidebar({ isOpen, onClose }) {
       const customer = {
         name: data.customerName,
         phone: data.customerPhone,
-        address: pickedAddress,
+        address: deliveryAddress,
         notes: data.notes,
         lat,
         lng,
+        pickup: isPickup,
+        pickupAddress: cfg.pickup_address || '',
       }
       const waNegocio = config?.whatsapp_negocio || '595986818441'
       const msgCelestina = buildWhatsAppMessage(order.order_number, items, totalPrice, customer)
@@ -443,7 +455,42 @@ export default function CartSidebar({ isOpen, onClose }) {
               <p className="font-display font-bold text-base" style={{ color: '#1d5e8c' }}>{formatPrice(totalPrice)}</p>
             </div>
 
-            {/* Dirección — SOLO desde el mapa (GPS o pin). No hay carga manual. */}
+            {/* Modo retiro: no se pide ubicación, se muestra dónde retirar. */}
+            {pickupOnly ? (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                  Retiro en el local
+                </label>
+                <div className="rounded-xl p-3.5 flex items-start gap-3" style={{ background: '#fef9ec', border: '1px solid #f2c14e' }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#f2c14e' }}>
+                    <Store size={18} style={{ color: '#1c2b36' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {config?.pickup_message && (
+                      <p className="text-sm leading-snug text-celestina-tinta">{config.pickup_message}</p>
+                    )}
+                    {config?.pickup_address && (
+                      <>
+                        <p className="text-sm font-bold mt-1.5 text-celestina-tinta flex items-start gap-1">
+                          <MapPin size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#1d5e8c' }} />
+                          {config.pickup_address}
+                        </p>
+                        <a
+                          href={`https://maps.google.com/?q=${encodeURIComponent(config.pickup_address)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-xs font-bold mt-1"
+                          style={{ color: '#1d5e8c' }}
+                        >
+                          Ver en el mapa →
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+            /* Dirección — SOLO desde el mapa (GPS o pin). No hay carga manual. */
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
                 Dirección de entrega
@@ -495,6 +542,7 @@ export default function CartSidebar({ isOpen, onClose }) {
                 </>
               )}
             </div>
+            )}
 
             {/* Nombre */}
             <div>

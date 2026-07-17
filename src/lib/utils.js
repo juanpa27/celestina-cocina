@@ -102,9 +102,14 @@ function mapsLink(lat, lng) {
   return `https://maps.google.com/?q=${lat},${lng}`
 }
 
-// Mensaje para Celestina (enviado desde el checkout del cliente)
+// Mensaje para Celestina (enviado desde el checkout del cliente).
+// En modo retiro (`customer.pickup`) no hay dirección de entrega: se muestra
+// "🏪 Retiro en el local" con la dirección del local (si está configurada).
 export function buildWhatsAppMessage(orderNumber, items, total, customer) {
   const link = mapsLink(customer.lat, customer.lng)
+  const pickupMapLink = customer.pickupAddress
+    ? `https://maps.google.com/?q=${encodeURIComponent(customer.pickupAddress)}`
+    : null
   return [
     `✨ *Celestina Cocina — Pedido #${orderNumber}*`,
     ``,
@@ -113,11 +118,19 @@ export function buildWhatsAppMessage(orderNumber, items, total, customer) {
     ``,
     `💰 *TOTAL: ${formatPrice(total)}*`,
     ``,
-    `📦 *Datos de entrega:*`,
+    customer.pickup ? `📦 *Datos del pedido:*` : `📦 *Datos de entrega:*`,
     `👤 *Nombre:* ${customer.name}`,
     `📱 *Tel:* ${customer.phone}`,
-    `📍 *Dirección:* ${customer.address}`,
-    link ? `🗺 *Ver en mapa:* ${link}` : null,
+    ...(customer.pickup
+      ? [
+          `🏪 *Retiro en el local*`,
+          customer.pickupAddress ? `📍 ${customer.pickupAddress}` : null,
+          pickupMapLink ? `🗺 *Ver en mapa:* ${pickupMapLink}` : null,
+        ]
+      : [
+          `📍 *Dirección:* ${customer.address}`,
+          link ? `🗺 *Ver en mapa:* ${link}` : null,
+        ]),
     customer.notes ? `📝 *Notas:* _${customer.notes}_` : null,
     ``,
     `✅ ¡Gracias por tu pedido!`,

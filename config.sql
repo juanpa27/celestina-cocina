@@ -41,4 +41,7 @@ create policy "app_config_insert_auth"
 -- ─────────────────────────────────────────
 insert into app_config (key, value, label) values
   ('whatsapp_negocio', '595986818441', 'WhatsApp Celestina Cocina'),
-  ('whatsapp_ajaka',   '595976444335', 'WhatsApp Ajaka (delivery)');
+  ('whatsapp_ajaka',   '595976444335', 'WhatsApp Ajaka (delivery)'),
+  ('pickup_only',      'false',        'Modo solo retiro (sin delivery)'),
+  ('pickup_message',   'Hoy no hacemos delivery. Podés pasar a retirar tu pedido por el local. ¡Gracias!', 'Mensaje de retiro (checkout)'),
+  ('pickup_address',   '',             'Dirección del local para retiro');

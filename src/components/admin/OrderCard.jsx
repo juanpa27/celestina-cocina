@@ -2,7 +2,7 @@ import { useState, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { MapPin, Phone, User, ChevronDown, ChevronUp, MessageCircle, FileText } from 'lucide-react'
+import { MapPin, Phone, User, ChevronDown, ChevronUp, MessageCircle, FileText, Store } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -174,21 +174,30 @@ export default function OrderCard({ order }) {
                   <Phone size={14} style={{ flexShrink: 0 }} />
                   {order.customer_phone}
                 </a>
-                <div className="flex items-start gap-2 text-sm sm:col-span-2" style={{ color: '#374151' }}>
-                  <MapPin size={14} style={{ color: '#5b96bf', flexShrink: 0, marginTop: 2 }} />
-                  <span className="flex-1">{order.delivery_address}</span>
-                  {mapsUrl && (
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold whitespace-nowrap"
-                      style={{ color: '#1d5e8c' }}
-                    >
-                      Ver mapa →
-                    </a>
-                  )}
-                </div>
+                {order.is_pickup ? (
+                  <div className="flex items-center gap-2 text-sm sm:col-span-2 font-bold" style={{ color: '#1c2b36' }}>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: '#fef9ec', border: '1px solid #f2c14e' }}>
+                      <Store size={14} style={{ color: '#1c2b36', flexShrink: 0 }} />
+                      Retiro en el local
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 text-sm sm:col-span-2" style={{ color: '#374151' }}>
+                    <MapPin size={14} style={{ color: '#5b96bf', flexShrink: 0, marginTop: 2 }} />
+                    <span className="flex-1">{order.delivery_address}</span>
+                    {mapsUrl && (
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold whitespace-nowrap"
+                        style={{ color: '#1d5e8c' }}
+                      >
+                        Ver mapa →
+                      </a>
+                    )}
+                  </div>
+                )}
                 {order.notes && (
                   <p className="text-xs sm:col-span-2 px-2 py-1.5 rounded-lg italic" style={{ background: '#fef9c3', color: '#854d0e' }}>
                     <span className="inline-flex items-center gap-1.5"><FileText size={12} />{order.notes}</span>
@@ -249,17 +258,19 @@ export default function OrderCard({ order }) {
                 </div>
               )}
 
-              {/* Notificar Ajaka — siempre visible, error si no está configurado */}
-              <div className="pt-1">
-                <button
-                  onClick={notifyAjaka}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-85"
-                  style={{ background: '#25d366' }}
-                >
-                  <MessageCircle size={13} />
-                  Notificar Ajaka
-                </button>
-              </div>
+              {/* Notificar Ajaka — solo para pedidos con delivery (en retiro no hay reparto) */}
+              {!order.is_pickup && (
+                <div className="pt-1">
+                  <button
+                    onClick={notifyAjaka}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-85"
+                    style={{ background: '#25d366' }}
+                  >
+                    <MessageCircle size={13} />
+                    Notificar Ajaka
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useConfig } from '../../hooks/useConfig'
 import { useIsOpen } from '../../hooks/useIsOpen'
+import { usePickupOnly } from '../../hooks/usePickupOnly'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { supabase } from '../../lib/supabase'
 import { exportFlyer, shareFlyer, FLYER_W, FLYER_H } from '../../lib/flyer'
@@ -23,6 +24,8 @@ const schema = z.object({
   payment_name:     z.string().optional(),
   payment_alias:    z.string().optional(),
   payment_bank:     z.string().optional(),
+  pickup_message:   z.string().optional(),
+  pickup_address:   z.string().optional(),
 })
 
 async function upsertConfig(key, value) {
@@ -35,7 +38,9 @@ async function upsertConfig(key, value) {
 export default function ConfigPage() {
   const { data: config, isLoading } = useConfig()
   const { data: isOpen = true } = useIsOpen()
+  const { data: pickupOnly = false } = usePickupOnly()
   const [togglingOpen, setTogglingOpen] = useState(false)
+  const [togglingPickup, setTogglingPickup] = useState(false)
   const queryClient = useQueryClient()
   const push = usePushNotifications()
 
@@ -78,6 +83,22 @@ export default function ConfigPage() {
     setTogglingOpen(false)
   }
 
+  async function togglePickup() {
+    setTogglingPickup(true)
+    const next = !pickupOnly
+    const { error } = await supabase
+      .from('app_config')
+      .upsert({ key: 'pickup_only', value: String(next) }, { onConflict: 'key' })
+    if (error) {
+      toast.error('No se pudo cambiar el modo.')
+    } else {
+      queryClient.setQueryData(['pickup_only'], next)
+      queryClient.invalidateQueries({ queryKey: ['pickup_only'] })
+      toast.success(next ? 'Modo retiro activado ✓' : 'Delivery activado ✓')
+    }
+    setTogglingPickup(false)
+  }
+
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -88,6 +109,8 @@ export default function ConfigPage() {
       payment_name:     '',
       payment_alias:    '',
       payment_bank:     '',
+      pickup_message:   '',
+      pickup_address:   '',
     },
   })
 
@@ -101,6 +124,8 @@ export default function ConfigPage() {
         payment_name:     config.payment_name     ?? '',
         payment_alias:    config.payment_alias    ?? '',
         payment_bank:     config.payment_bank     ?? '',
+        pickup_message:   config.pickup_message   ?? '',
+        pickup_address:   config.pickup_address   ?? '',
       })
       if (config.payment_bank_logo_url) setLogoUrl(config.payment_bank_logo_url)
     }
@@ -120,6 +145,8 @@ export default function ConfigPage() {
         upsertConfig('payment_name',     data.payment_name     ?? ''),
         upsertConfig('payment_alias',    data.payment_alias    ?? ''),
         upsertConfig('payment_bank',     data.payment_bank     ?? ''),
+        upsertConfig('pickup_message',   data.pickup_message   ?? ''),
+        upsertConfig('pickup_address',   data.pickup_address   ?? ''),
       ])
       queryClient.invalidateQueries({ queryKey: ['config'] })
       toast.success('Configuración guardada')
@@ -244,6 +271,46 @@ export default function ConfigPage() {
         </div>
       </button>
 
+      {/* Toggle modo retiro (sin delivery) — independiente de abrir/cerrar */}
+      <button
+        onClick={togglePickup}
+        disabled={togglingPickup || isLoading}
+        className="w-full flex items-center gap-4 p-4 rounded-2xl mb-6 transition-colors disabled:opacity-60"
+        style={{
+          background: pickupOnly ? '#fef9ec' : '#f8fafc',
+          border: `2px solid ${pickupOnly ? '#f2c14e' : '#e2e8f0'}`,
+        }}
+      >
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: pickupOnly ? '#f2c14e' : '#64748b' }}
+        >
+          {togglingPickup
+            ? <Loader2 size={20} color="#fff" className="animate-spin" />
+            : pickupOnly
+              ? <Store size={20} color="#1c2b36" />
+              : <Truck size={20} color="#fff" />
+          }
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-bold text-sm" style={{ color: pickupOnly ? '#8a6d1f' : '#334155' }}>
+            {pickupOnly ? 'Solo retiro (sin delivery)' : 'Delivery activo'}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: pickupOnly ? '#b08a2e' : '#94a3b8' }}>
+            {pickupOnly ? 'Los clientes piden sin dirección y pasan a retirar' : 'Los clientes marcan su ubicación para el reparto'}
+          </p>
+        </div>
+        <div
+          className="flex-shrink-0 w-12 h-6 rounded-full relative transition-colors"
+          style={{ background: pickupOnly ? '#f2c14e' : '#d1d5db' }}
+        >
+          <div
+            className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
+            style={{ left: pickupOnly ? 28 : 4 }}
+          />
+        </div>
+      </button>
+
       {isLoading ? (
         <div className="flex justify-center py-16">
           <Loader2 size={24} className="animate-spin" style={{ color: '#1d5e8c' }} />
@@ -337,6 +404,43 @@ export default function ConfigPage() {
                   style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* ── Retiro en el local ── */}
+          <div className="bg-white rounded-2xl p-5 flex flex-col gap-4" style={{ border: '1px solid #e5e7eb' }}>
+            <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <Store size={20} style={{ color: '#1d5e8c' }} />
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#1c2b36' }}>Retiro en el local</p>
+                <p className="text-xs" style={{ color: '#9ca3af' }}>Lo que ve el cliente cuando el modo "Solo retiro" está activo.</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                Mensaje para el cliente
+              </label>
+              <textarea
+                {...register('pickup_message')}
+                rows={2}
+                placeholder="Hoy no hacemos delivery. Pasá a retirar tu pedido por el local."
+                className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none resize-none"
+                style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#1d5e8c' }}>
+                Dirección del local
+              </label>
+              <input
+                {...register('pickup_address')}
+                placeholder="Ej: Av. Principal 123, Caaguazú"
+                className="w-full px-3 py-2.5 rounded-xl text-sm border outline-none"
+                style={{ border: '1.5px solid #e5e7eb', color: '#1c2b36' }}
+              />
+              <p className="text-[11px] mt-1.5" style={{ color: '#9ca3af' }}>
+                Se le muestra al cliente con un link a Google Maps para llegar.
+              </p>
             </div>
           </div>
 

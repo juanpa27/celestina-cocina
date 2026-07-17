@@ -70,6 +70,7 @@ create table orders (
   delivery_address text not null,
   delivery_lat double precision,
   delivery_lng double precision,
+  is_pickup boolean not null default false, -- true = retiro en el local (sin delivery, sin lat/lng)
   notes text,
   total numeric(12,0) not null,
   status text not null default 'pendiente'

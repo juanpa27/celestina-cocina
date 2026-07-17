@@ -7,7 +7,7 @@ async function fetchOrders() {
     .from('orders')
     .select(`
       id, order_number, customer_name, customer_phone,
-      delivery_address, delivery_lat, delivery_lng,
+      delivery_address, delivery_lat, delivery_lng, is_pickup,
       notes, total, status, created_at,
       order_items (
         id, item_name, item_price, quantity,
