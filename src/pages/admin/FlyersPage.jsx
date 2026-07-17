@@ -257,8 +257,8 @@ export default function FlyersPage() {
             <Field label="Menú completo">
               <p className="text-xs" style={{ color: '#7c8a93' }}>
                 Arma una sola imagen con <b>todos los platos activos</b>, agrupados por categoría,
-                con el diseño de la carta. Ideal para postear como estado de WhatsApp. La altura
-                se ajusta a la cantidad de platos.
+                con el diseño de la carta. Ideal para postear como estado de WhatsApp. El contenido
+                se achica automáticamente para entrar en el lienzo 9:16.
               </p>
             </Field>
           )}
