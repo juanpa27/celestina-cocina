@@ -1,6 +1,8 @@
 import { useRef, useState, useLayoutEffect } from 'react'
-import { formatPrice, calcDiscountedPrice } from '../../../lib/utils'
+import { MessageCircle } from 'lucide-react'
+import { formatPrice, calcDiscountedPrice, stripTrailingCategoryWord, formatLocalPhone } from '../../../lib/utils'
 import { FLYER_W, FLYER_H } from '../../../lib/flyer'
+import { useConfig } from '../../../hooks/useConfig'
 import { C } from './flyerChrome'
 
 // Menú completo para postear como estado/historia de WhatsApp: TODOS los platos
@@ -9,23 +11,27 @@ import { C } from './flyerChrome'
 // para que entre exacto en un estado sin barras negras — el cuerpo se auto-
 // escala para que todos los platos quepan en el alto disponible.
 
-const CARD_W = (FLYER_W - 96 - 30) / 2   // padding 48*2, gap 30
+const COLS = 3
+const GAP = 24
 
-function Card({ item }) {
+function Card({ item, categoryName }) {
   const effective = calcDiscountedPrice(item.price, item.discount_pct)
   const hasDiscount = item.discount_pct > 0
   const isPopular = item.is_popular
+  const displayName = stripTrailingCategoryWord(item.name, categoryName)
 
   return (
     <div style={{
-      width: CARD_W,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
       background: '#fff',
-      borderRadius: 22,
+      borderRadius: 18,
       overflow: 'hidden',
       border: isPopular ? `3px solid ${C.amarillo}` : '1px solid #e7eef3',
       boxShadow: isPopular ? '0 8px 22px rgba(242,193,78,0.35)' : '0 6px 18px rgba(29,94,140,0.08)',
     }}>
-      <div style={{ position: 'relative', height: 250 }}>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', flexShrink: 0 }}>
         {item.image_url
           ? <img
               src={item.image_url}
@@ -35,46 +41,46 @@ function Card({ item }) {
             />
           : (
             <div style={{ width: '100%', height: '100%', background: C.azulejo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 72, color: '#c4dcea' }}>
+              <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 48, color: '#c4dcea' }}>
                 {item.name.charAt(0).toUpperCase()}
               </span>
             </div>
           )}
         {hasDiscount && (
           <div style={{
-            position: 'absolute', top: 14, left: 14,
+            position: 'absolute', top: 10, left: 10,
             background: C.azul, color: C.crema,
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 22,
-            padding: '5px 13px', borderRadius: 999,
+            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 15,
+            padding: '3px 10px', borderRadius: 999,
           }}>
             {item.discount_pct}% OFF
           </div>
         )}
         {isPopular && (
           <div style={{
-            position: 'absolute', bottom: 14, left: 14,
+            position: 'absolute', bottom: 10, left: 10,
             background: C.amarillo, color: C.tinta,
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 22,
-            padding: '5px 14px', borderRadius: 999,
+            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 15,
+            padding: '3px 11px', borderRadius: 999,
             boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
           }}>
-            🔥 Más pedido
+            🔥 Top
           </div>
         )}
       </div>
-      <div style={{ padding: '16px 20px 18px' }}>
+      <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <div style={{
-          fontFamily: 'Fraunces, serif', fontWeight: 600,
-          color: C.tinta, fontSize: 28, lineHeight: 1.12, marginBottom: 8,
+          fontFamily: 'DM Sans, sans-serif', fontWeight: 700,
+          color: C.tinta, fontSize: 16, lineHeight: 1.2, marginBottom: 6,
         }}>
-          {item.name}
+          {displayName}
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: C.azul, fontSize: 30 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 'auto' }}>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: C.azul, fontSize: 19 }}>
             {formatPrice(effective)}
           </span>
           {hasDiscount && (
-            <span style={{ color: '#9ca3af', fontSize: 20, textDecoration: 'line-through' }}>
+            <span style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'line-through' }}>
               {formatPrice(item.price)}
             </span>
           )}
@@ -90,9 +96,13 @@ export default function MenuStatusFlyer({ categories }) {
     .map(c => ({ ...c, items: (c.items ?? []).filter(i => i.available !== false) }))
     .filter(c => c.items.length)
 
+  const { data: config } = useConfig()
+  const phone = config?.whatsapp_negocio || '595986818441'
+
   // Auto-fit: escala el cuerpo para que todos los platos entren en el alto
-  // disponible del lienzo 9:16. Las alturas son fijas (foto 250px), así que no
-  // hace falta re-medir cuando cargan las imágenes.
+  // disponible del lienzo 9:16. La foto usa aspect-ratio (no un alto fijo en
+  // px), así que su altura ya depende del ancho de la tarjeta y no hace falta
+  // re-medir cuando cargan las imágenes.
   const bodyRef = useRef(null)
   const contentRef = useRef(null)
   const [scale, setScale] = useState(1)
@@ -151,13 +161,25 @@ export default function MenuStatusFlyer({ categories }) {
                 </span>
                 <div style={{ flex: 1, height: 3, background: C.azulejo, borderRadius: 2 }} />
               </div>
-              {/* Grilla 2 columnas */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 30 }}>
-                {cat.items.map(item => <Card key={item.id} item={item} />)}
+              {/* Grilla 3 columnas — gridAutoRows/stretch para que el precio quede
+                  a la misma altura entre tarjetas de una fila aunque el nombre
+                  de alguna ocupe más líneas */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: GAP }}>
+                {cat.items.map(item => <Card key={item.id} item={item} categoryName={cat.name} />)}
               </div>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Pie de contacto — mismo dato que agrega Ajaka a mano hoy (teléfono en
+          formato local con 0), pero generado siempre por el sistema para que
+          nunca falte ni quede con formato distinto. */}
+      <div style={{ background: C.azul, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexShrink: 0 }}>
+        <MessageCircle size={28} color={C.amarillo} strokeWidth={2.5} />
+        <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: C.crema, fontSize: 32, letterSpacing: 0.5 }}>
+          {formatLocalPhone(phone)}
+        </span>
       </div>
     </div>
   )

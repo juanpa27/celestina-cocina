@@ -37,6 +37,29 @@ export function calcDiscountedPrice(price, discountPct) {
   return Math.round(raw / 500) * 500
 }
 
+// Saca la última palabra del nombre del plato si ya está en el título de la
+// categoría (ej: "Tagliatelles artesanales" bajo "Pastas Artesanales" → "Tagliatelles").
+// Solo afecta el texto mostrado (flyers), no el nombre real del plato.
+export function stripTrailingCategoryWord(itemName, categoryName) {
+  const catWords = (categoryName ?? '').toLowerCase().split(/\s+/)
+  const words = itemName.split(/\s+/)
+  const last = words[words.length - 1]?.toLowerCase()
+  if (words.length > 1 && catWords.includes(last)) {
+    return words.slice(0, -1).join(' ')
+  }
+  return itemName
+}
+
+// Convierte el número de WhatsApp guardado en config (código de país sin +, ej.
+// "595986818441") al formato local con 0 que la gente reconoce y usa para
+// marcar dentro de Paraguay (ej. "0986 818 441").
+export function formatLocalPhone(phone) {
+  const digits = (phone ?? '').replace(/\D/g, '')
+  const local = digits.startsWith('595') ? digits.slice(3) : digits
+  const withZero = local.startsWith('0') ? local : `0${local}`
+  return withZero.replace(/(\d{4})(\d{3})(\d{3})$/, '$1 $2 $3')
+}
+
 export function vibrateFeedback(ms = 40) {
   navigator.vibrate?.(ms)
 }
