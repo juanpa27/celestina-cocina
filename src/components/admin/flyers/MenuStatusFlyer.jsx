@@ -13,6 +13,14 @@ import { C } from './flyerChrome'
 
 const COLS = 3
 const GAP = 24
+// Alto de foto FIJO en px (no aspect-ratio): html-to-image serializa el DOM a
+// SVG/foreignObject y rasteriza contra el layout en el momento exacto de la
+// captura — un aspect-ratio necesita una pasada de layout para resolverse a un
+// alto real, y en la práctica eso rompía justo la primera fila (foto en blanco
+// o desbordada) en el archivo exportado, aunque el DOM en vivo se veía bien.
+// Un alto en px queda resuelto de entrada, sin ambigüedad de layout.
+const CARD_W = (FLYER_W - 96 - GAP * (COLS - 1)) / COLS
+const PHOTO_H = Math.round(CARD_W * 0.75)
 
 function Card({ item, categoryName }) {
   const effective = calcDiscountedPrice(item.price, item.discount_pct)
@@ -31,7 +39,7 @@ function Card({ item, categoryName }) {
       border: isPopular ? `3px solid ${C.amarillo}` : '1px solid #e7eef3',
       boxShadow: isPopular ? '0 8px 22px rgba(242,193,78,0.35)' : '0 6px 18px rgba(29,94,140,0.08)',
     }}>
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', flexShrink: 0 }}>
+      <div style={{ position: 'relative', width: '100%', height: PHOTO_H, flexShrink: 0 }}>
         {item.image_url
           ? <img
               src={item.image_url}
@@ -60,11 +68,11 @@ function Card({ item, categoryName }) {
           <div style={{
             position: 'absolute', bottom: 10, left: 10,
             background: C.amarillo, color: C.tinta,
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 15,
+            fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 13,
             padding: '3px 11px', borderRadius: 999,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)', whiteSpace: 'nowrap',
           }}>
-            🔥 Top
+            🔥 Más pedido
           </div>
         )}
       </div>
