@@ -128,7 +128,7 @@ export default function MenuStatusFlyer({ categories }) {
     <div style={{ width: FLYER_W, height: FLYER_H, background: C.crema, fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
       {/* Header — logo a la izquierda */}
-      <div style={{ background: C.azul, padding: '48px 48px 42px', display: 'flex', alignItems: 'center', gap: 30, flexShrink: 0 }}>
+      <div style={{ position: 'relative', background: C.azul, padding: '48px 48px 42px', display: 'flex', alignItems: 'center', gap: 30, flexShrink: 0 }}>
         <div style={{ width: 150, height: 150, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${C.crema}`, flexShrink: 0, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}>
           <img src="/logo_v2.jpeg" crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
@@ -142,6 +142,24 @@ export default function MenuStatusFlyer({ categories }) {
           <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 22, letterSpacing: 1, marginTop: 12 }}>
             Pastas caseras y más · Caaguazú
           </div>
+        </div>
+        {/* Contacto — pill a la derecha, a la altura del subtítulo. Antes vivía en
+            un footer al pie del flyer; se movió acá para que el flyer cierre con
+            la última tarjeta y el dato de contacto quede junto a la marca.
+            `position:absolute` a propósito: así no ocupa espacio en el flex y no
+            comprime el bloque de texto (si no, el título "Celestina Cocina" se
+            partía en dos líneas). */}
+        <div style={{
+          position: 'absolute', right: 48, bottom: 44,
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(255,255,255,0.1)',
+          border: '1.5px solid rgba(242,193,78,0.45)',
+          borderRadius: 999, padding: '9px 20px',
+        }}>
+          <MessageCircle size={24} color={C.amarillo} strokeWidth={2.5} />
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, color: C.amarillo, fontSize: 26, letterSpacing: 0.5 }}>
+            {formatLocalPhone(phone)}
+          </span>
         </div>
       </div>
 
@@ -178,16 +196,6 @@ export default function MenuStatusFlyer({ categories }) {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Pie de contacto — mismo dato que agrega Ajaka a mano hoy (teléfono en
-          formato local con 0), pero generado siempre por el sistema para que
-          nunca falte ni quede con formato distinto. */}
-      <div style={{ background: C.azul, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexShrink: 0 }}>
-        <MessageCircle size={28} color={C.amarillo} strokeWidth={2.5} />
-        <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: C.crema, fontSize: 32, letterSpacing: 0.5 }}>
-          {formatLocalPhone(phone)}
-        </span>
       </div>
     </div>
   )
